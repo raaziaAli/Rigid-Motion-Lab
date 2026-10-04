@@ -196,6 +196,14 @@ footer{padding:30px 0 40px;color:var(--muted);font-size:.85rem}
 .poly.di{fill:rgba(194,58,85,.15);stroke:var(--target)}.vtx.di{fill:var(--target)}.vlab.di{fill:var(--target)}.trace.di{stroke:var(--target)}
 .vtx.ghost{fill:var(--pre);opacity:.5}.vlab.ghost{fill:var(--muted)}
 .trybox{margin:0 0 12px;padding:10px 12px;border-radius:10px;border:1px dashed var(--line);font-size:.93rem}
+.howto{margin:.5rem 0 .3rem;padding-left:1.3em}.howto li{margin:.25rem 0}
+.fieldcol{display:grid;gap:6px}.fieldcol label{font-size:.9rem;color:var(--muted);margin-top:4px}
+input[type=text],textarea{font:inherit;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+textarea{resize:vertical;min-height:80px;line-height:1.5}
+.qblock{margin:16px 0}.qblock label{display:block;font-weight:500;margin:2px 0 6px}
+.snapgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.snap{display:grid;gap:6px;align-content:start}.snap img{width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff}
+.snap p{margin:0}
 [hidden]{display:none !important}
 @media (prefers-reduced-motion: reduce){*{transition:none !important}}
 </style>
@@ -218,6 +226,7 @@ footer{padding:30px 0 40px;color:var(--muted);font-size:.85rem}
     <button class="tab" role="tab" aria-selected="false" data-tab="practice">Practice</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="congruence">Congruence challenges</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="construct">No grid: constructions</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="report">My report</button>
   </div>
 </nav>
 
@@ -283,6 +292,7 @@ footer{padding:30px 0 40px;color:var(--muted);font-size:.85rem}
         <div class="row">
           <button class="btn" id="play">Play animation</button>
           <button class="btn ghost" id="resetShape">Reset figure</button>
+          <button class="btn ghost" id="exSnap">Add snapshot to my report</button>
           <label class="check"><input type="checkbox" id="traces" checked> Show paths</label>
         </div>
       </div>
@@ -346,6 +356,7 @@ footer{padding:30px 0 40px;color:var(--muted);font-size:.85rem}
           <button class="btn ghost" id="sbAdd">Add a second step</button>
           <button class="btn" id="sbPlay">Play animation</button>
           <button class="btn ghost" id="sbReset">Reset the test</button>
+          <button class="btn ghost" id="sbSnap">Add snapshot to my report</button>
         </div>
         <div class="why" id="sbNet"></div>
         <h3>Coordinates</h3>
@@ -400,6 +411,7 @@ footer{padding:30px 0 40px;color:var(--muted);font-size:.85rem}
           <button class="btn" id="cgApply">Apply step</button>
           <button class="btn ghost" id="cgUndo">Undo</button>
           <button class="btn ghost" id="cgReset">Start over</button>
+          <button class="btn ghost" id="cgSnap">Add snapshot to my report</button>
         </div>
         <h3>Your sequence</h3>
         <ol class="steps" id="cgSteps"></ol>
@@ -447,6 +459,7 @@ footer{padding:30px 0 40px;color:var(--muted);font-size:.85rem}
           <button class="btn ghost" id="coPrev">Previous step</button>
           <button class="btn" id="coNext">Next step</button>
           <button class="btn ghost" id="coAll">Show all steps</button>
+          <button class="btn ghost" id="coSnap">Add snapshot to my report</button>
         </div>
         <div class="why" id="coWhy"></div>
       </div>
@@ -476,9 +489,59 @@ footer{padding:30px 0 40px;color:var(--muted);font-size:.85rem}
     </div>
   </div>
 </section>
+
+<!-- REPORT -->
+<section id="report" hidden>
+  <div class="keyidea" style="border-left-color:var(--tr)">
+    <p class="big"><b>Your investigation report.</b> This is what you turn in.</p>
+    <ol class="howto">
+      <li>Investigate in the other tabs. Whenever you find something important, press <b>Add snapshot to my report</b>.</li>
+      <li>Come back here, answer the investigation questions, and explain each snapshot.</li>
+      <li>Press <b>Save my report as a PDF</b> and turn in the file from your Downloads folder.</li>
+    </ol>
+    <p class="note" id="rpStore"></p>
+  </div>
+  <div class="lab">
+    <div>
+      <div class="panel">
+        <h2>Investigation questions</h2>
+        <p class="note" style="margin-top:0">Use what you saw in the lab. Mention your snapshots when they help.</p>
+        <div id="rpQuestions"></div>
+      </div>
+      <div class="panel">
+        <h2>Evidence snapshots <span class="note" id="rpSnapCount" style="font-family:inherit;font-weight:400;font-size:.9rem"></span></h2>
+        <div id="rpSnaps"></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <h2>Your details</h2>
+        <div class="fieldcol">
+          <label for="rpName">Name</label><input type="text" id="rpName" autocomplete="name">
+          <label for="rpClass">Class or period</label><input type="text" id="rpClass">
+          <label for="rpTeacher">Teacher (optional)</label><input type="text" id="rpTeacher">
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Progress so far</h2>
+        <p class="note" style="margin-top:0">Filled in automatically from your work in the lab.</p>
+        <div id="rpSummary"></div>
+      </div>
+      <div class="panel">
+        <h2>Turn it in</h2>
+        <p class="note" style="margin-top:0">The PDF includes your details, progress, answers and snapshots.</p>
+        <div class="row"><button class="btn" id="rpSave">Save my report as a PDF</button></div>
+        <div class="status" id="rpStatus" role="status" hidden></div>
+        <div class="row" style="margin-top:18px"><button class="btn ghost" id="rpClear">Clear my report</button></div>
+        <p class="note">On a shared computer, clear your report after you’ve saved the PDF.</p>
+      </div>
+    </div>
+  </div>
+</section>
 </main>
 <footer class="wrap">Rotations are counterclockwise unless marked clockwise. Coordinates are rounded to two decimal places when needed.</footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function(){
 const $=s=>document.querySelector(s);
@@ -590,7 +653,7 @@ function animate(dur,frame,done){if(reduceMotion){frame(1);done&&done();return;}
 /* ---------- tabs ---------- */
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===b?'true':'false'));
-  ['explore','practice','congruence','construct'].forEach(id=>{$('#'+id).hidden=id!==b.dataset.tab;});
+  ['explore','practice','congruence','construct','report'].forEach(id=>{$('#'+id).hidden=id!==b.dataset.tab;});
 }));
 
 /* =========================================================
@@ -672,7 +735,7 @@ renderExplore();
 ========================================================= */
 const pr={mode:'mixed',c:0,t:0,s:0,q:null,lastConcept:-1};
 $('#prMode').querySelectorAll('button').forEach(b=>b.onclick=()=>{pr.mode=b.dataset.m;$('#prMode').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));newQ();});
-function score(ok){pr.t++;if(ok){pr.c++;pr.s++;}else pr.s=0;$('#scC').textContent=pr.c;$('#scT').textContent=pr.t;$('#scS').textContent=pr.s;}
+function score(ok){pr.t++;if(ok){pr.c++;pr.s++;}else pr.s=0;$('#scC').textContent=pr.c;$('#scT').textContent=pr.t;$('#scS').textContent=pr.s;reportHook('practice',ok);}
 function randTriangle(lo,hi){for(let k=0;k<500;k++){const P=[[rand(lo,hi),rand(lo,hi)],[rand(lo,hi),rand(lo,hi)],[rand(lo,hi),rand(lo,hi)]];
   const A=Math.abs(area2(P))/2;if(A<3)continue;const d=[dist(P[0],P[1]),dist(P[1],P[2]),dist(P[2],P[0])];
   if(Math.abs(d[0]-d[1])<.01||Math.abs(d[1]-d[2])<.01||Math.abs(d[0]-d[2])<.01)continue;return P;}return[[1,1],[4,1],[1,3]];}
@@ -904,7 +967,7 @@ function renderCg(anim){
 $('#cgApply').onclick=()=>{if(cg.busy||cg.done)return;const s=cgStep();const from=cg.pts.map(p=>p.slice());cg.busy=true;cg.busyType=s.type;
   animate(900,t=>renderCg(from.map(p=>partialStep(p,s,t))),()=>{cg.busy=false;cg.pts=from.map(p=>applyStep(p,s));cg.steps.push(s);afterStep();renderCg();});};
 function afterStep(){const L=LEVELS[cg.i],n=L.start.length,lab=LET.slice(0,n),tl=TLET.slice(0,n);
-  if(samePts(cg.pts,L.target)){cg.done=true;cg.solved.add(cg.i);
+  if(samePts(cg.pts,L.target)){cg.done=true;cg.solved.add(cg.i);reportHook('cg',true,{i:cg.i,rec:{status:'mapped',steps:cg.steps.map(stepText)}});
     const name=n===3?'△':'';setStatus('good',`<b>Mapped!</b> Your sequence of ${cg.steps.length} rigid transformation${cg.steps.length>1?'s':''} maps ${name}${lab} onto ${name}${tl}, so <b>${name}${lab} ≅ ${name}${tl}</b>. Corresponding parts match: ${lab[0]}${lab[1]} = ${tl[0]}${tl[1]}, ∠${lab[0]} ≅ ∠${tl[0]}, and so on.${cg.i<LEVELS.length-1?' <button class="btn" id="cgNext" style="margin-top:8px">Next challenge</button>':' You finished every challenge.'}`);
     const nb=$('#cgNext');if(nb)nb.onclick=()=>loadLevel(cg.i+1);
     lvWrap.children[cg.i].classList.add('solved');}
@@ -914,7 +977,7 @@ function afterStep(){const L=LEVELS[cg.i],n=L.start.length,lab=LET.slice(0,n),tl
 $('#cgUndo').onclick=()=>{if(!cg.steps.length)return;cg.steps.pop();const L=LEVELS[cg.i];cg.pts=L.start.map(p=>cg.steps.reduce((q,s)=>applyStep(q,s),p));cg.done=false;setStatus('','Step removed.');renderCg();};
 $('#cgReset').onclick=()=>loadLevel(cg.i);
 $('#cgNot').onclick=()=>{const L=LEVELS[cg.i];
-  if(!L.congruent){cg.done=true;cg.solved.add(cg.i);lvWrap.children[cg.i].classList.add('solved');
+  if(!L.congruent){cg.done=true;cg.solved.add(cg.i);reportHook('cg',true,{i:cg.i,rec:{status:'claim'}});lvWrap.children[cg.i].classList.add('solved');
     setStatus('good',`<b>Correct, they are not congruent.</b> ${L.why}${cg.i<LEVELS.length-1?' <button class="btn" id="cgNext" style="margin-top:8px">Next challenge</button>':''}`);const nb=$('#cgNext');if(nb)nb.onclick=()=>loadLevel(cg.i+1);renderCg();}
   else setStatus('bad','<b>Look again.</b> Every side length and angle of your figure matches the target in the table below. When all corresponding parts match like this, a sequence of rigid transformations exists. Keep searching for it.');};
 $('#cgHint').onclick=()=>setStatus('',`<b>Hint:</b> ${LEVELS[cg.i].hint}`);
@@ -935,7 +998,7 @@ THINK.forEach((T,ti)=>{const p=document.createElement('div');p.className='panel'
   p.innerHTML=`<span class="tag">Question ${ti+1}</span><p class="qtext" style="margin-top:2px">${T.q}</p><div class="opts">${order.map(j=>`<button class="opt" data-i="${j}">${T.o[j]}</button>`).join('')}</div><div class="fb" role="status"></div>`;
   const fb=p.querySelector('.fb');
   p.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{const j=+b.dataset.i;p.querySelectorAll('.opt').forEach(x=>{x.disabled=true;if(+x.dataset.i===T.a)x.classList.add('right');});
-    const ok=j===T.a;if(!ok)b.classList.add('wrong');fb.className='fb show '+(ok?'good':'bad');fb.innerHTML=`<b>${ok?'Correct!':'Not quite.'}</b><p>${T.e}</p><button class="btn ghost" style="margin-top:8px">Try again</button>`;
+    const ok=j===T.a;reportHook('think',ok,T.q);if(!ok)b.classList.add('wrong');fb.className='fb show '+(ok?'good':'bad');fb.innerHTML=`<b>${ok?'Correct!':'Not quite.'}</b><p>${T.e}</p><button class="btn ghost" style="margin-top:8px">Try again</button>`;
     fb.querySelector('button').onclick=()=>{p.querySelectorAll('.opt').forEach(x=>{x.disabled=false;x.classList.remove('right','wrong');});fb.className='fb';};});
   think.appendChild(p);});
 
@@ -1111,7 +1174,7 @@ function ngRender(){const svg=$('#ngSvg'),q=ng.q;svg.innerHTML='';
     q.guess.forEach((p,i)=>{el('circle',{cx:p[0],cy:p[1],r:8,class:'guess-pt','data-k':i},g);el('text',{x:p[0]+14,y:p[1]-10,class:'c-lab'},g).textContent=ABCp[i];});}
   if(q.mode==='name'){if(q.answered){drawGivenNG(g,q);drawPaths(g,q);}cTri(g,q.T,'pre',ABC);cTri(g,q.img,'target',ABCp);}
 }
-function ngScore(ok){ng.t++;if(ok)ng.c++;$('#ngC').textContent=ng.c;$('#ngT').textContent=ng.t;}
+function ngScore(ok){ng.t++;if(ok)ng.c++;$('#ngC').textContent=ng.c;$('#ngT').textContent=ng.t;reportHook('nogrid',ok);}
 const NGWHY={reflect:'Each image point is directly across line m, the same distance away on the other side (the segment from a point to its image is perpendicular to m).',
   translate:'Every point moves exactly like the arrow: the same length, in the same direction.',
   rotate:'Each point stays the same distance from O and turns through the given angle, in the given direction.'};
@@ -1178,6 +1241,158 @@ const CQ=[
 ];
 $('#ngMode').querySelectorAll('button').forEach(b=>b.onclick=()=>{ng.mode=b.dataset.m;$('#ngMode').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));ngNew();});
 ngNew();
+
+
+/* =========================================================
+   MY REPORT — snapshots, answers, progress, PDF export
+========================================================= */
+const RKEY='rigid-motion-lab-report-v1';
+const QUESTIONS=[
+  {id:'q1',area:'Explore: translation',q:'Choose a translation in Explore and drag the vertices into a new shape. What do you notice about the arrows from each vertex to its image? What stays the same, and what changes?'},
+  {id:'q2',area:'Explore: reflection',q:'Reflect a figure over two different lines. How is the mirror line related to the segment joining a point and its image? What happens to the order of the vertex letters?'},
+  {id:'q3',area:'Explore: rotation',q:'Rotate a figure 90° counterclockwise, then 90° clockwise, about the same center. Compare the two images. What does every point keep the same during a rotation?'},
+  {id:'q4',area:'Coordinate rules',q:'Pick one coordinate rule, for example rotation 90° counterclockwise about the origin: (x, y) → (−y, x). Test it on two points and explain why it works.'},
+  {id:'q5',area:'Congruence challenges',q:'Use one of your congruence challenges as an example. Explain how your sequence of transformations shows that the two figures are congruent.'},
+  {id:'q6',area:'Congruence challenges',q:'In challenges 5 and 7, why could no sequence of rigid transformations map one figure onto the other?'},
+  {id:'q7',area:'No grid: constructions',q:'Without a grid, how do you reflect a point over a line with a compass and straightedge? Describe the steps and explain why they work.'},
+  {id:'q8',area:'Wrap-up',q:'What is one thing you are still wondering about?'}
+];
+const MAXSNAP=12;
+function freshReport(){return{name:'',cls:'',teacher:'',answers:{},snaps:[],log:[],practice:{c:0,t:0,best:0},nogrid:{c:0,t:0},think:{c:0,t:0},cg:{}};}
+let R=freshReport();
+try{const raw=localStorage.getItem(RKEY);if(raw){const o=JSON.parse(raw);R=Object.assign(freshReport(),o);}}catch(e){}
+let storageOk=true;
+function saveR(){try{localStorage.setItem(RKEY,JSON.stringify(R));storageOk=true;}catch(e){storageOk=false;}
+  const w=$('#rpStore');if(w)w.textContent=storageOk?'Your work is saved in this browser automatically.':'This browser couldn’t keep a copy (storage is full or turned off). Save your PDF before you close the page.';}
+let saveTimer=null;function saveSoon(){clearTimeout(saveTimer);saveTimer=setTimeout(saveR,400);}
+function logResult(area,text,ok){R.log.push({area,text:(text||'').replace(/\s+/g,' ').trim().slice(0,140),ok,at:Date.now()});if(R.log.length>60)R.log.shift();saveR();}
+function reportHook(kind,ok,extra){
+  if(kind==='practice'){R.practice.t++;if(ok)R.practice.c++;R.practice.best=Math.max(R.practice.best||0,pr.s);const q=$('#prCard .qtext');logResult('Practice: '+(pr.q?pr.q.tag:''),q?q.textContent:'',ok);}
+  if(kind==='nogrid'){R.nogrid.t++;if(ok)R.nogrid.c++;const t=$('#ngCard .tag'),q=$('#ngCard .qtext');logResult('No grid: '+(t?t.textContent:''),q?q.textContent:'',ok);}
+  if(kind==='think'){R.think.t++;if(ok)R.think.c++;logResult('Think it through',extra,ok);}
+  if(kind==='cg'){R.cg[extra.i]=extra.rec;saveR();}
+  if(!$('#report').hidden)renderReport();}
+
+/* restore counters into the other tabs */
+pr.c=R.practice.c;pr.t=R.practice.t;$('#scC').textContent=pr.c;$('#scT').textContent=pr.t;
+ng.c=R.nogrid.c;ng.t=R.nogrid.t;$('#ngC').textContent=ng.c;$('#ngT').textContent=ng.t;
+Object.keys(R.cg).forEach(k=>cg.solved.add(+k));lvWrap.querySelectorAll('button').forEach((b,j)=>b.classList.toggle('solved',cg.solved.has(j)));
+
+/* ---------- snapshots ---------- */
+const STYLE_PROPS=['fill','fill-opacity','stroke','stroke-width','stroke-dasharray','stroke-linejoin','stroke-linecap','stroke-opacity','opacity','font-family','font-size','font-weight','font-style','paint-order','text-anchor'];
+async function svgToJpeg(svg){
+  const root=document.documentElement,prev=root.getAttribute('data-theme');root.setAttribute('data-theme','light');
+  let url,w,h;
+  try{const clone=svg.cloneNode(true),src=svg.querySelectorAll('*'),dst=clone.querySelectorAll('*');
+    src.forEach((e,i)=>{const cs=getComputedStyle(e);let st='';STYLE_PROPS.forEach(p=>{const v=cs.getPropertyValue(p);if(v)st+=`${p}:${v};`;});
+      if(e.classList&&e.classList.contains('handle'))st+='fill:none;stroke:none;';dst[i].setAttribute('style',st);});
+    const vb=svg.viewBox.baseVal;w=vb.width;h=vb.height;clone.setAttribute('width',w);clone.setAttribute('height',h);clone.setAttribute('xmlns',NS);
+    url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(clone));}
+  finally{if(prev===null)root.removeAttribute('data-theme');else root.setAttribute('data-theme',prev);}
+  const img=new Image();await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=url;});
+  const sc=1.6,c=document.createElement('canvas');c.width=Math.round(w*sc);c.height=Math.round(h*sc);const x=c.getContext('2d');
+  x.fillStyle='#ffffff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);
+  return{src:c.toDataURL('image/jpeg',0.86),w,h};}
+function flash(btn,msg,ms){const old=btn.dataset.label||btn.textContent;btn.dataset.label=old;btn.textContent=msg;clearTimeout(btn._t);btn._t=setTimeout(()=>{btn.textContent=old;},ms||2200);}
+async function addSnap(btn,svgSel,title,details){
+  if(R.snaps.length>=MAXSNAP){flash(btn,`Report is full (${MAXSNAP} snapshots). Remove one in My report.`,3500);return;}
+  try{const im=await svgToJpeg($(svgSel));R.snaps.push({id:Date.now()+'-'+Math.random().toString(36).slice(2,6),title,details,img:im.src,w:im.w,h:im.h,note:''});saveR();
+    flash(btn,`Added to My report (${R.snaps.length} of ${MAXSNAP})`);if(!$('#report').hidden)renderReport();}
+  catch(e){flash(btn,'Couldn’t capture this view. Try again.',3000);}}
+$('#exSnap').onclick=()=>{const s=exStep(),full=ex.pts.map(p=>applyStep(p,s)),kept=Math.sign(area2(ex.pts))===Math.sign(area2(full));
+  addSnap($('#exSnap'),'#exSvg','Explore: '+stepText(s),`Figure: ${SHAPES[ex.shape].name}. Rule: ${ruleText(s)}. Orientation ${kept?'kept':'reversed'}. Every side length and angle is unchanged.`);};
+$('#cgSnap').onclick=()=>{const L=LEVELS[cg.i];addSnap($('#cgSnap'),'#cgSvg',`Congruence challenge ${cg.i+1}: ${L.title}`,
+  (cg.steps.length?'Sequence: '+cg.steps.map((s,i)=>`(${i+1}) ${stepText(s)}`).join('; ')+'. ':'No steps applied yet. ')+$('#cgStatus').textContent.replace(/Next challenge$/,'').trim());};
+$('#sbSnap').onclick=()=>{const q=$('#prCard .qtext');addSnap($('#sbSnap'),'#prSvg','Concept test: '+(q?q.textContent:''),
+  'Steps: '+sb.steps.map(s=>stepText(s)).join(', then ')+'. '+$('#sbNet').textContent);};
+$('#coSnap').onclick=()=>{const nm={reflect:'reflection',translate:'translation',rotate:'rotation'}[co.type];
+  addSnap($('#coSnap'),'#coSvg',`Construction: ${nm}, ${co.cur<0?'starting figure':'after step '+(co.cur+1)}`,co.cur<0?co.data.given:co.data.steps[co.cur].t);};
+
+/* ---------- report tab ---------- */
+function summaryLines(){const out=[];
+  out.push(`Practice questions: ${R.practice.c} correct out of ${R.practice.t} answered (best streak ${R.practice.best||0}).`);
+  out.push(`Congruence challenges completed: ${Object.keys(R.cg).length} of ${LEVELS.length}.`);
+  out.push(`No-grid practice: ${R.nogrid.c} correct out of ${R.nogrid.t} answered.`);
+  out.push(`Think it through: ${R.think.c} correct out of ${R.think.t} attempts.`);return out;}
+function cgLines(){return LEVELS.map((L,i)=>{const r=R.cg[i];if(!r)return`Challenge ${i+1}, ${L.title}: not completed yet.`;
+  if(r.status==='claim')return`Challenge ${i+1}, ${L.title}: correctly identified the figures as not congruent.`;
+  return`Challenge ${i+1}, ${L.title}: mapped using ${r.steps.join(', then ')}.`;});}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function renderReport(){
+  $('#rpName').value=R.name;$('#rpClass').value=R.cls;$('#rpTeacher').value=R.teacher;
+  $('#rpSummary').innerHTML='<ul class="reslist">'+summaryLines().map(l=>`<li>${esc(l)}</li>`).join('')+'</ul><h3>Congruence challenges</h3><ul class="reslist">'+cgLines().map(l=>`<li>${esc(l)}</li>`).join('')+'</ul>';
+  const qs=$('#rpQuestions');if(!qs.dataset.built){qs.dataset.built='1';
+    qs.innerHTML=QUESTIONS.map((Q,i)=>`<div class="qblock"><span class="tag">${esc(Q.area)}</span><label for="rp_${Q.id}">${i+1}. ${esc(Q.q)}</label><textarea id="rp_${Q.id}" data-q="${Q.id}" rows="4"></textarea></div>`).join('');
+    qs.querySelectorAll('textarea').forEach(t=>t.addEventListener('input',()=>{R.answers[t.dataset.q]=t.value;saveSoon();}));}
+  QUESTIONS.forEach(Q=>{const t=$('#rp_'+Q.id);if(document.activeElement!==t)t.value=R.answers[Q.id]||'';});
+  const sg=$('#rpSnaps');$('#rpSnapCount').textContent=`${R.snaps.length} of ${MAXSNAP}`;
+  if(!R.snaps.length){sg.innerHTML='<p class="note">No snapshots yet. Use the “Add snapshot” buttons in Explore, Practice (concept tests), Congruence challenges and No grid to capture evidence of your investigation.</p>';}
+  else{sg.innerHTML='<div class="snapgrid">'+R.snaps.map((s,i)=>`<div class="snap"><img src="${s.img}" alt="Snapshot ${i+1}: ${esc(s.title)}"><b>${i+1}. ${esc(s.title)}</b><p class="note">${esc(s.details)}</p>
+      <label class="note" for="sn_${s.id}">What does this snapshot show?</label><textarea id="sn_${s.id}" data-s="${s.id}" rows="3">${esc(s.note)}</textarea>
+      <button class="btn ghost" data-del="${s.id}">Remove snapshot</button></div>`).join('')+'</div>';
+    sg.querySelectorAll('textarea').forEach(t=>t.addEventListener('input',()=>{const s=R.snaps.find(x=>x.id===t.dataset.s);if(s){s.note=t.value;saveSoon();}}));
+    sg.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{R.snaps=R.snaps.filter(x=>x.id!==b.dataset.del);saveR();renderReport();});}
+  saveR();}
+[['rpName','name'],['rpClass','cls'],['rpTeacher','teacher']].forEach(([id,k])=>$('#'+id).addEventListener('input',e=>{R[k]=e.target.value;saveSoon();}));
+document.querySelector('[data-tab="report"]').addEventListener('click',renderReport);
+$('#rpClear').onclick=()=>{const b=$('#rpClear');if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Click again to erase everything';clearTimeout(b._t);b._t=setTimeout(()=>{b.dataset.arm='';b.textContent='Clear my report';},4000);return;}
+  b.dataset.arm='';b.textContent='Clear my report';R=freshReport();saveR();
+  pr.c=pr.t=pr.s=0;ng.c=ng.t=0;['scC','scT','scS','ngC','ngT'].forEach(id=>$('#'+id).textContent='0');cg.solved.clear();lvWrap.querySelectorAll('button').forEach(x=>x.classList.remove('solved'));
+  $('#rpQuestions').dataset.built='';renderReport();setRp('Your report was cleared.','');};
+function setRp(msg,kind){const s=$('#rpStatus');s.className='status '+(kind||'');s.innerHTML=msg;s.hidden=!msg;}
+
+/* ---------- PDF ---------- */
+const dlP=(window.claude&&typeof window.claude.use==='function')?Promise.resolve(window.claude.use('downloads')).catch(()=>null):Promise.resolve(null);
+const SYM={'′':"'",'″':"''",'→':'->','≅':' is congruent to ','△':'triangle ','∠':'angle ','−':'-','⟨':'<','⟩':'>','↺':'','↻':'','‘':"'",'’':"'",'“':'"','”':'"','–':'-','—':'-','…':'...','•':'-','≈':'~'};
+function toAnsi(str){let s=String(str).replace(/[′″→≅△∠−⟨⟩↺↻‘’“”–—…•≈]/g,c=>SYM[c]).replace(/ {2,}/g,' ');return/[^\t\n\r\x20-\x7E\u00A0-\u00FF]/.test(s)?null:s;}
+async function buildPdf(){
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'pt',format:'letter'});const W=612,H=792,M=54,TW=W-2*M;let y=M;
+  const INK=[21,35,58],MUTED=[85,101,124];
+  const need=h=>{if(y+h>H-M-14){doc.addPage();y=M;}};
+  function lineImg(str,size,bold,color){const sc=3,font=`${bold?'700':'400'} ${size*sc}px Arial, "Segoe UI", Tahoma, sans-serif`,rtl=/[\u0590-\u08FF\uFB1D-\uFEFC]/.test(str);
+    const m=document.createElement('canvas').getContext('2d');m.font=font;const lines=[];
+    String(str).split('\n').forEach(p=>{let line='';p.split(/\s+/).forEach(w=>{const t=line?line+' '+w:w;if(line&&m.measureText(t).width>TW*sc){lines.push(line);line=w;}else line=t;});lines.push(line);});
+    const lh=size*1.4;lines.forEach(l=>{need(lh);const c=document.createElement('canvas');c.width=Math.ceil(TW*sc);c.height=Math.ceil(lh*sc);const x=c.getContext('2d');
+      x.font=font;x.fillStyle=`rgb(${color.join(',')})`;x.direction=rtl?'rtl':'ltr';x.textAlign=rtl?'right':'left';x.fillText(l,rtl?c.width-2:0,size*sc*1.05);
+      doc.addImage(c.toDataURL('image/png'),'PNG',M,y,TW,lh);y+=lh;});}
+  function text(str,o){o=o||{};const size=o.size||11,bold=!!o.bold,color=o.color||INK;const s=toAnsi(str);
+    if(s===null){lineImg(str,size,bold,color);y+=o.gap===undefined?4:o.gap;return;}
+    doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...color);
+    const lh=size*1.38;doc.splitTextToSize(s,TW).forEach(l=>{need(lh);doc.text(l,M,y+size);y+=lh;});y+=o.gap===undefined?4:o.gap;}
+  function heading(t){y+=10;need(40);text(t,{size:15,bold:true,gap:2});doc.setDrawColor(211,221,232);doc.line(M,y,W-M,y);y+=10;}
+  text('Rigid Motion Lab: Investigation Report',{size:21,bold:true,gap:6});
+  text('Translations, reflections, rotations and congruence',{size:11,color:MUTED,gap:12});
+  text(`Name: ${R.name}`,{gap:1});if(R.cls)text(`Class: ${R.cls}`,{gap:1});if(R.teacher)text(`Teacher: ${R.teacher}`,{gap:1});
+  text(`Date: ${new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'})}`,{gap:2});
+  heading('1. Progress summary');summaryLines().forEach(l=>text('- '+l,{gap:2}));
+  y+=4;text('Congruence challenges',{bold:true,gap:2});cgLines().forEach(l=>text('- '+l,{gap:2}));
+  const recent=R.log.slice(-15);if(recent.length){y+=4;text('Most recent answers',{bold:true,gap:2});
+    recent.forEach(e=>text(`${e.ok?'Correct':'Incorrect'} - ${e.area}${e.text?': '+e.text:''}`,{size:9.5,color:e.ok?[28,127,71]:[180,55,42],gap:1}));}
+  heading('2. Investigation questions');
+  QUESTIONS.forEach((Q,i)=>{need(60);text(`${i+1}. ${Q.q}`,{bold:true,gap:3});const a=(R.answers[Q.id]||'').trim();
+    if(a)text(a,{gap:12});else text('(No answer written.)',{color:MUTED,gap:12});});
+  if(R.snaps.length){y+=10;need(70+290*(R.snaps[0].h/R.snaps[0].w)+60);y-=10;}heading('3. Evidence snapshots');
+  if(!R.snaps.length)text('(No snapshots added.)',{color:MUTED});
+  R.snaps.forEach((s,i)=>{const iw=290,ih=iw*(s.h/s.w);need(70+ih);text(`Snapshot ${i+1}: ${s.title}`,{bold:true,gap:2});text(s.details,{size:9.5,color:MUTED,gap:6});
+    need(ih+8);doc.addImage(s.img,'JPEG',M,y,iw,ih);doc.setDrawColor(211,221,232);doc.rect(M,y,iw,ih);y+=ih+8;
+    text('Student notes: '+((s.note||'').trim()||'(none)'),{gap:16});});
+  const n=doc.getNumberOfPages();for(let p=1;p<=n;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...MUTED);
+    const who=toAnsi(R.name)||'';doc.text(`Rigid Motion Lab report${who?' - '+who:''}`,M,H-30);doc.text(`Page ${p} of ${n}`,W-M,H-30,{align:'right'});}
+  return doc;}
+$('#rpSave').onclick=async()=>{
+  if(!R.name.trim()){setRp('Add your name before saving, so your teacher knows whose report it is.','bad');$('#rpName').focus();return;}
+  if(!window.jspdf||!window.jspdf.jsPDF){setRp('The PDF maker didn’t load. Check your internet connection and reload the page. Your work is still here.','bad');return;}
+  const btn=$('#rpSave');btn.disabled=true;setRp('Building your PDF…','');
+  try{const doc=await buildPdf();const blob=doc.output('blob');
+    const safe=R.name.trim().replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-|-$/g,'')||'student';const filename=`Rigid-Motion-Lab-Report-${safe}.pdf`;
+    const dl=await dlP;
+    if(dl){try{await dl.save({filename,data:blob});setRp(`<b>Saved.</b> Look for <b>${esc(filename)}</b> in your Downloads folder, then turn it in.`,'good');}
+      catch(e){const c=e&&e.code;setRp(c==='declined'?'The save was cancelled. Press the button again when you’re ready.':c==='rate_limited'?'A save window is already open. Finish or close it, then try again.':'Saving isn’t available here. Ask your teacher for the GitHub link to the lab, which can save files.','bad');}}
+    else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
+      setRp(`<b>Saved.</b> Look for <b>${esc(filename)}</b> in your Downloads folder, then turn it in.`,'good');}}
+  catch(e){setRp('Something went wrong while building the PDF. Try removing a snapshot, then save again.','bad');}
+  finally{btn.disabled=false;}};
+saveR();
 
 })();
 </script>
