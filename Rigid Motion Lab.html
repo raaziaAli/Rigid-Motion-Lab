@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rigid Motion Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Lexend:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F7FB; --panel:#FFFFFF; --ink:#15233A; --muted:#55657C; --line:#D3DDE8;
+  --grid:#DFE8F1; --axis:#71839B; --pre:#2F4560; --pre-fill:rgba(47,69,96,.10);
+  --tr:#B97D00; --tr-fill:rgba(214,152,20,.24);
+  --rf:#8A3FB8; --rf-fill:rgba(138,63,184,.20);
+  --ro:#0F7A68; --ro-fill:rgba(15,122,104,.20);
+  --target:#C23A55; --good:#1C7F47; --good-bg:#E5F4EB; --bad:#B4372A; --bad-bg:#FBEAE7;
+  --chip:#E8EFF6;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F1724; --panel:#162133; --ink:#E7EEF8; --muted:#9CAFC8; --line:#2A3A53;
+    --grid:#1F2D43; --axis:#7E93B1; --pre:#B9C9DE; --pre-fill:rgba(185,201,222,.10);
+    --tr:#F2B637; --tr-fill:rgba(242,182,55,.22);
+    --rf:#C68CF5; --rf-fill:rgba(198,140,245,.22);
+    --ro:#33D1B5; --ro-fill:rgba(51,209,181,.20);
+    --target:#FF7590; --good:#5BD18E; --good-bg:#16352A; --bad:#FF8A78; --bad-bg:#3A1F1C; --chip:#1E2C42;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0F1724; --panel:#162133; --ink:#E7EEF8; --muted:#9CAFC8; --line:#2A3A53;
+  --grid:#1F2D43; --axis:#7E93B1; --pre:#B9C9DE; --pre-fill:rgba(185,201,222,.10);
+  --tr:#F2B637; --tr-fill:rgba(242,182,55,.22);
+  --rf:#C68CF5; --rf-fill:rgba(198,140,245,.22);
+  --ro:#33D1B5; --ro-fill:rgba(51,209,181,.20);
+  --target:#FF7590; --good:#5BD18E; --good-bg:#16352A; --bad:#FF8A78; --bad-bg:#3A1F1C; --chip:#1E2C42;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Lexend",system-ui,-apple-system,"Segoe UI",sans-serif;font-weight:400;line-height:1.55;font-size:16px}
+h1,h2,h3{font-family:"Bricolage Grotesque","Lexend",system-ui,sans-serif;line-height:1.15;margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px}
+header.top{padding:28px 0 8px}
+header.top h1{font-size:clamp(2rem,4.6vw,3.2rem);font-weight:800;letter-spacing:-.02em}
+header.top p{margin:.4rem 0 0;color:var(--muted);max-width:62ch}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;font-size:.9rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend i{width:14px;height:14px;border-radius:3px;display:inline-block;border:2px solid}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);padding:14px 0 12px;border-bottom:1px solid var(--line);margin-bottom:22px}
+nav.tabs .wrap{display:flex;gap:6px;flex-wrap:wrap}
+.tab{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:9px 16px;border-radius:999px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+button{font:inherit}
+:focus-visible{outline:3px solid var(--ro);outline-offset:2px}
+.lab{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,1fr);gap:24px;align-items:start}
+@media (max-width:920px){.lab{grid-template-columns:1fr}}
+.board{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px;position:relative}
+.board svg{width:100%;height:auto;display:block;touch-action:none;user-select:none}
+.board .hint{font-size:.82rem;color:var(--muted);margin:6px 6px 2px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 20px}
+.panel + .panel{margin-top:16px}
+.panel h2{font-size:1.35rem;font-weight:700;margin-bottom:10px}
+.panel h3{font-size:1.02rem;font-weight:700;margin:16px 0 8px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:.92rem}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.seg.types button[data-t="translate"][aria-pressed="true"]{background:var(--tr);border-color:var(--tr);color:#1b1300}
+.seg.types button[data-t="reflect"][aria-pressed="true"]{background:var(--rf);border-color:var(--rf);color:#fff}
+.seg.types button[data-t="rotate"][aria-pressed="true"]{background:var(--ro);border-color:var(--ro);color:#fff}
+.ctl{display:grid;grid-template-columns:90px 1fr 46px;align-items:center;gap:10px;margin:8px 0}
+.ctl label{font-size:.9rem;color:var(--muted)}
+.ctl output{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--ink)}
+select,input[type=number]{font:inherit;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+input[type=number]{width:74px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--panel);padding:9px 16px;border-radius:9px;cursor:pointer;font-weight:500}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.check{display:flex;align-items:center;gap:8px;font-size:.92rem;color:var(--muted);cursor:pointer}
+.rule{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.3rem;font-weight:700;padding:10px 14px;border-radius:10px;background:var(--chip);border-left:5px solid var(--accent,var(--ink));margin:4px 0 10px;overflow-x:auto}
+.what{margin:0;max-width:60ch}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:500}
+td.ok{color:var(--good);font-weight:600}
+td.no{color:var(--bad);font-weight:600}
+.scroll{overflow-x:auto}
+.note{font-size:.9rem;color:var(--muted)}
+.orient{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.orient div{background:var(--chip);border-radius:8px;padding:6px 10px;font-size:.88rem}
+.props td:first-child{font-weight:500}
+.yes{color:var(--good);font-weight:600}.nope{color:var(--bad);font-weight:600}
+
+/* svg */
+.gl{stroke:var(--grid);stroke-width:1}
+.axis{stroke:var(--axis);stroke-width:1.6}
+.tick{fill:var(--muted);font-size:11px;font-family:"Lexend",system-ui,sans-serif}
+.axlab{fill:var(--muted);font-size:14px;font-style:italic;font-family:"Lexend",system-ui,sans-serif}
+.poly{stroke-width:2.5;stroke-linejoin:round}
+.poly.pre{fill:var(--pre-fill);stroke:var(--pre)}
+.poly.tr{fill:var(--tr-fill);stroke:var(--tr)}
+.poly.rf{fill:var(--rf-fill);stroke:var(--rf)}
+.poly.ro{fill:var(--ro-fill);stroke:var(--ro)}
+.poly.ghost{fill:none;stroke:var(--pre);stroke-dasharray:4 5;opacity:.5}
+.poly.target{fill:none;stroke:var(--target);stroke-dasharray:8 5;stroke-width:2.5}
+.vtx.pre{fill:var(--pre)}.vtx.tr{fill:var(--tr)}.vtx.rf{fill:var(--rf)}.vtx.ro{fill:var(--ro)}.vtx.target{fill:var(--target)}
+.vlab{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:700;font-size:15px;paint-order:stroke;stroke:var(--panel);stroke-width:4px;stroke-linejoin:round}
+.vlab.pre{fill:var(--pre)}.vlab.tr{fill:var(--tr)}.vlab.rf{fill:var(--rf)}.vlab.ro{fill:var(--ro)}.vlab.target{fill:var(--target)}
+.handle{fill:transparent;cursor:grab}
+.handle:hover{fill:rgba(127,127,127,.18)}
+.mirror{stroke:var(--rf);stroke-width:2.5;stroke-dasharray:10 6}
+.mirror-lab{fill:var(--rf);font-size:13px;font-weight:600;paint-order:stroke;stroke:var(--panel);stroke-width:4px}
+.trace{stroke-width:1.5;stroke-dasharray:4 4;fill:none}
+.trace.tr{stroke:var(--tr)}.trace.rf{stroke:var(--rf)}.trace.ro{stroke:var(--ro)}
+.arrowhead.tr{fill:var(--tr)}.arrowhead.ro{fill:var(--ro)}.arrowhead.rf{fill:var(--rf)}.arrowhead.ink{fill:var(--ink)}
+.center{fill:var(--ro);stroke:var(--panel);stroke-width:2}
+.center-lab{fill:var(--ro);font-size:13px;font-weight:600;paint-order:stroke;stroke:var(--panel);stroke-width:4px}
+.mid{fill:var(--rf)}
+.pt{stroke:var(--panel);stroke-width:2}
+
+/* practice */
+.prgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:860px){.prgrid{grid-template-columns:1fr}}
+.score{display:flex;gap:18px;flex-wrap:wrap;margin:6px 0 14px}
+.score div{font-size:.9rem;color:var(--muted)}
+.score b{display:block;font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.7rem;color:var(--ink);line-height:1.1}
+.qtext{font-size:1.08rem;margin:6px 0 12px}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:10px;padding:10px 12px;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--ink)}
+.opt.right{border-color:var(--good);background:var(--good-bg)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.opt:disabled{cursor:default}
+.fb{margin-top:12px;padding:10px 12px;border-radius:10px;display:none}
+.fb.show{display:block}
+.fb.good{background:var(--good-bg);color:var(--good)}
+.fb.bad{background:var(--bad-bg);color:var(--bad)}
+.fb p{margin:.2rem 0;color:var(--ink)}
+.coordin{display:flex;align-items:center;gap:6px;font-size:1.1rem;flex-wrap:wrap}
+.tag{display:inline-block;font-size:.78rem;padding:2px 9px;border-radius:999px;background:var(--chip);color:var(--muted);margin-bottom:6px}
+
+/* congruence */
+.big{font-size:1.05rem;max-width:68ch}
+.levels{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.levels button{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--chip);color:var(--ink);cursor:pointer;font-weight:600}
+.levels button[aria-current="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.levels button.solved{border-color:var(--good);box-shadow:inset 0 -4px 0 var(--good)}
+.steps{margin:8px 0 0;padding-left:1.4em}
+.steps li{margin:3px 0}
+.status{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--chip)}
+.status.good{background:var(--good-bg)}
+.status.bad{background:var(--bad-bg)}
+.status b{font-weight:600}
+.pane{margin-top:10px}
+.pane[hidden]{display:none}
+.fields{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.fields label{font-size:.9rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+.think{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-top:16px}
+.think .panel{margin-top:0}
+.keyidea{border-left:5px solid var(--target);padding:12px 16px;background:var(--panel);border-radius:0 12px 12px 0;margin:0 0 20px;border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.keyidea p{margin:.3rem 0}
+footer{padding:30px 0 40px;color:var(--muted);font-size:.85rem}
+
+/* constructions */
+.costeps{margin:10px 0 0;padding-left:0;list-style:none;counter-reset:st}
+.costeps li{counter-increment:st;display:grid;grid-template-columns:30px 1fr;gap:6px;padding:8px 8px;border-radius:10px;cursor:pointer;border:1px solid transparent}
+.costeps li::before{content:counter(st);font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:700;width:24px;height:24px;border-radius:50%;background:var(--chip);display:grid;place-items:center;font-size:.85rem}
+.costeps li.cur{background:var(--chip);border-color:var(--line)}
+.costeps li.cur::before{background:var(--target);color:#fff}
+.costeps li.done::before{background:var(--ink);color:var(--panel)}
+.costeps li.todo{color:var(--muted)}
+.costeps .tool{display:inline-block;font-size:.75rem;padding:1px 8px;border-radius:999px;border:1px solid var(--line);margin-left:6px;color:var(--muted);vertical-align:1px}
+.why{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--chip);font-size:.93rem}
+.c-arc{fill:none;stroke:var(--muted);stroke-width:1.5;opacity:.75}
+.c-line{stroke:var(--muted);stroke-width:1.5;opacity:.8}
+.c-dash{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:5 5;opacity:.8;fill:none}
+.now .c-arc,.now .c-line,.now .c-dash{stroke:var(--target);stroke-width:2.6;opacity:1}
+.c-measure{stroke:var(--target);stroke-width:5;opacity:.35;stroke-linecap:round}
+.c-pt{fill:var(--ink)}
+.c-lab{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:700;font-size:16px;fill:var(--ink);paint-order:stroke;stroke:var(--panel);stroke-width:4px}
+.c-small{font-size:13px;fill:var(--muted);paint-order:stroke;stroke:var(--panel);stroke-width:4px}
+.m-line{stroke:var(--rf);stroke-width:2.5}
+.v-line{stroke:var(--tr);stroke-width:3}
+.given-ang{stroke:var(--ro);stroke-width:2.5;fill:none}
+.guess{fill:none;stroke:var(--ink);stroke-width:2;stroke-dasharray:6 4}
+.guess-pt{fill:var(--panel);stroke:var(--ink);stroke-width:2.5;cursor:grab}
+.paper{fill:var(--panel)}
+.reslist{margin:8px 0 0;padding-left:1.2em}
+.sbstep{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;margin-top:8px}
+.sbstep b{min-width:52px}
+.sbstep label{font-size:.88rem;color:var(--muted);display:flex;gap:5px;align-items:center}
+.sbstep input[type=number]{width:66px}
+.poly.di{fill:rgba(194,58,85,.15);stroke:var(--target)}.vtx.di{fill:var(--target)}.vlab.di{fill:var(--target)}.trace.di{stroke:var(--target)}
+.vtx.ghost{fill:var(--pre);opacity:.5}.vlab.ghost{fill:var(--muted)}
+.trybox{margin:0 0 12px;padding:10px 12px;border-radius:10px;border:1px dashed var(--line);font-size:.93rem}
+[hidden]{display:none !important}
+@media (prefers-reduced-motion: reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+<header class="top wrap">
+  <h1>Rigid Motion Lab</h1>
+  <p>Slide, flip and turn figures on the coordinate plane. Watch what changes, what stays the same, and why that makes figures congruent.</p>
+  <div class="legend">
+    <span><i style="border-color:var(--pre);background:var(--pre-fill)"></i>Pre-image (original)</span>
+    <span><i style="border-color:var(--tr);background:var(--tr-fill)"></i>Translation</span>
+    <span><i style="border-color:var(--rf);background:var(--rf-fill)"></i>Reflection</span>
+    <span><i style="border-color:var(--ro);background:var(--ro-fill)"></i>Rotation</span>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Sections">
+  <div class="wrap" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-tab="explore">Explore</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="practice">Practice</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="congruence">Congruence challenges</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="construct">No grid: constructions</button>
+  </div>
+</nav>
+
+<main class="wrap">
+<!-- EXPLORE -->
+<section id="explore">
+  <div class="lab">
+    <div>
+      <div class="board">
+        <svg id="exSvg" aria-label="Coordinate grid showing the pre-image and its image"></svg>
+        <p class="hint">Drag any vertex of the grey pre-image to reshape it. The image updates instantly.</p>
+      </div>
+      <div class="panel">
+        <h2>What stays the same?</h2>
+        <p class="note" style="margin-top:0">A rigid transformation (also called an isometry or rigid motion) moves a figure without stretching, shrinking or bending it. Compare the measurements of the pre-image and the image.</p>
+        <div class="scroll"><table id="exMeasure"></table></div>
+        <div class="orient" id="exOrient"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2>Choose a figure</h2>
+        <div class="seg" id="shapeSeg"></div>
+        <h3>Choose a transformation</h3>
+        <div class="seg types" id="typeSeg">
+          <button data-t="translate" aria-pressed="true">Translation</button>
+          <button data-t="reflect" aria-pressed="false">Reflection</button>
+          <button data-t="rotate" aria-pressed="false">Rotation</button>
+        </div>
+
+        <div class="pane" id="pTranslate">
+          <div class="ctl"><label for="ta">Right / left</label><input type="range" id="ta" min="-10" max="10" step="1" value="4"><output id="taO">4</output></div>
+          <div class="ctl"><label for="tb">Up / down</label><input type="range" id="tb" min="-10" max="10" step="1" value="-5"><output id="tbO">-5</output></div>
+        </div>
+        <div class="pane" id="pReflect" hidden>
+          <div class="ctl" style="grid-template-columns:90px 1fr"><label for="rl">Line</label>
+            <select id="rl">
+              <option value="x-axis">x-axis</option>
+              <option value="y-axis" selected>y-axis</option>
+              <option value="y=x">y = x</option>
+              <option value="y=-x">y = −x</option>
+              <option value="x=k">vertical line x = k</option>
+              <option value="y=k">horizontal line y = k</option>
+            </select></div>
+          <div class="ctl" id="rkRow" hidden><label for="rk">k</label><input type="range" id="rk" min="-6" max="6" step="1" value="2"><output id="rkO">2</output></div>
+        </div>
+        <div class="pane" id="pRotate" hidden>
+          <div class="seg" id="dirSeg" style="margin:4px 0 6px">
+            <button data-d="1" aria-pressed="true">↺ Counterclockwise</button>
+            <button data-d="-1" aria-pressed="false">↻ Clockwise</button>
+          </div>
+          <div class="ctl"><label for="ang">Angle</label><input type="range" id="ang" min="0" max="360" step="15" value="90"><output id="angO">90°</output></div>
+          <div class="seg" id="angQuick" style="margin-bottom:6px">
+            <button data-a="90" data-d="1">90° counterclockwise</button>
+            <button data-a="180" data-d="1">180°</button>
+            <button data-a="90" data-d="-1">90° clockwise</button>
+          </div>
+          <div class="ctl"><label for="cx">Center x</label><input type="range" id="cx" min="-6" max="6" step="1" value="0"><output id="cxO">0</output></div>
+          <div class="ctl"><label for="cy">Center y</label><input type="range" id="cy" min="-6" max="6" step="1" value="0"><output id="cyO">0</output></div>
+        </div>
+
+        <div class="row">
+          <button class="btn" id="play">Play animation</button>
+          <button class="btn ghost" id="resetShape">Reset figure</button>
+          <label class="check"><input type="checkbox" id="traces" checked> Show paths</label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 id="exTitle">Translation</h2>
+        <div class="rule" id="exRule"></div>
+        <p class="what" id="exWhat"></p>
+        <h3>Coordinates</h3>
+        <div class="scroll"><table id="exCoords"></table></div>
+      </div>
+
+      <div class="panel">
+        <h2>Properties at a glance</h2>
+        <div class="scroll"><table class="props">
+          <tr><th></th><th>Translation</th><th>Reflection</th><th>Rotation</th></tr>
+          <tr><td>Side lengths</td><td class="yes">Kept</td><td class="yes">Kept</td><td class="yes">Kept</td></tr>
+          <tr><td>Angle measures</td><td class="yes">Kept</td><td class="yes">Kept</td><td class="yes">Kept</td></tr>
+          <tr><td>Parallel lines</td><td class="yes">Kept</td><td class="yes">Kept</td><td class="yes">Kept</td></tr>
+          <tr><td>Area and perimeter</td><td class="yes">Kept</td><td class="yes">Kept</td><td class="yes">Kept</td></tr>
+          <tr><td>Orientation</td><td class="yes">Kept</td><td class="nope">Reversed</td><td class="yes">Kept</td></tr>
+          <tr><td>Position</td><td>Changes</td><td>Changes</td><td>Changes</td></tr>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRACTICE -->
+<section id="practice" hidden>
+  <div class="prgrid">
+    <div>
+      <div class="panel">
+        <h2>Practice questions</h2>
+        <p class="note" style="margin-top:0">Every question is generated fresh, so you can keep going as long as you like.</p>
+        <div class="seg" id="prMode">
+          <button data-m="mixed" aria-pressed="true">Mixed</button>
+          <button data-m="point" aria-pressed="false">Find the image</button>
+          <button data-m="identify" aria-pressed="false">Name the transformation</button>
+          <button data-m="rule" aria-pressed="false">Write the rule</button>
+          <button data-m="concept" aria-pressed="false">Concepts</button>
+        </div>
+        <div class="score">
+          <div><b id="scC">0</b>correct</div>
+          <div><b id="scT">0</b>answered</div>
+          <div><b id="scS">0</b>streak</div>
+        </div>
+      </div>
+      <div class="panel" id="prCard"></div>
+    </div>
+    <div>
+      <div class="board" id="prBoard">
+        <svg id="prSvg" aria-label="Coordinate grid for the current question"></svg>
+        <p class="hint" id="prHint" hidden>Drag the grey vertices to test other cases.</p>
+      </div>
+      <div class="panel" id="sbPanel" hidden>
+        <h2>Test it out</h2>
+        <p class="what" id="sbTip"></p>
+        <div id="sbSteps"></div>
+        <div class="row">
+          <button class="btn ghost" id="sbAdd">Add a second step</button>
+          <button class="btn" id="sbPlay">Play animation</button>
+          <button class="btn ghost" id="sbReset">Reset the test</button>
+        </div>
+        <div class="why" id="sbNet"></div>
+        <h3>Coordinates</h3>
+        <div class="scroll"><table id="sbCoords"></table></div>
+        <div id="sbMeasWrap"><h3>Measurements</h3><div class="scroll"><table id="sbMeas"></table></div><div class="orient" id="sbOrient"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONGRUENCE -->
+<section id="congruence" hidden>
+  <div class="keyidea">
+    <p class="big"><b>Key idea:</b> Two figures are congruent if and only if a sequence of rigid transformations (translations, reflections and rotations) maps one figure exactly onto the other.</p>
+    <p class="note">Because rigid transformations never change lengths or angles, every pair of corresponding sides and corresponding angles of congruent figures are equal. If any side or angle doesn't match, no sequence of rigid motions can ever work.</p>
+  </div>
+  <div class="lab">
+    <div class="board">
+      <svg id="cgSvg" aria-label="Coordinate grid for the congruence challenge"></svg>
+      <p class="hint">Solid figure: the one you move. Dashed red outline: the target. Faint dashed outline: where you started.</p>
+    </div>
+    <div>
+      <div class="panel">
+        <h2>Map it onto the target</h2>
+        <div class="levels" id="cgLevels"></div>
+        <h3 id="cgTitle" style="margin-top:4px"></h3>
+        <p class="what" id="cgGoal"></p>
+
+        <h3>Add a step</h3>
+        <div class="seg types" id="cgType">
+          <button data-t="translate" aria-pressed="true">Translate</button>
+          <button data-t="reflect" aria-pressed="false">Reflect</button>
+          <button data-t="rotate" aria-pressed="false">Rotate</button>
+        </div>
+        <div class="pane fields" id="cgPT">
+          <label>x change <input type="number" id="cgA" value="0" step="1"></label>
+          <label>y change <input type="number" id="cgB" value="0" step="1"></label>
+        </div>
+        <div class="pane fields" id="cgPR" hidden>
+          <label>Line <select id="cgLine">
+            <option value="x-axis">x-axis</option><option value="y-axis">y-axis</option>
+            <option value="y=x">y = x</option><option value="y=-x">y = −x</option>
+            <option value="x=k">x = k</option><option value="y=k">y = k</option></select></label>
+          <label id="cgKL" hidden>k <input type="number" id="cgK" value="0" step="1"></label>
+        </div>
+        <div class="pane fields" id="cgPO" hidden>
+          <label>Angle <select id="cgAng"><option value="90">90° counterclockwise</option><option value="180">180°</option><option value="-90">90° clockwise</option></select></label>
+          <label>Center x <input type="number" id="cgCx" value="0" step="1"></label>
+          <label>Center y <input type="number" id="cgCy" value="0" step="1"></label>
+        </div>
+        <div class="row">
+          <button class="btn" id="cgApply">Apply step</button>
+          <button class="btn ghost" id="cgUndo">Undo</button>
+          <button class="btn ghost" id="cgReset">Start over</button>
+        </div>
+        <h3>Your sequence</h3>
+        <ol class="steps" id="cgSteps"></ol>
+        <div class="row" id="cgClaimRow">
+          <p class="note" style="margin:0;flex-basis:100%">Think no sequence can ever work? Make your claim:</p>
+          <button class="btn ghost" id="cgNot">I think these can’t be congruent</button>
+          <button class="btn ghost" id="cgHint">Show a hint</button>
+        </div>
+        <div class="status" id="cgStatus" role="status"></div>
+      </div>
+      <div class="panel">
+        <h2>Compare the measurements</h2>
+        <div class="scroll"><table id="cgMeasure"></table></div>
+      </div>
+    </div>
+  </div>
+
+  <h2 style="margin-top:34px;font-size:1.6rem">Think it through</h2>
+  <p class="note">Questions about why rigid transformations and congruence go together.</p>
+  <div class="think" id="think"></div>
+</section>
+
+<!-- CONSTRUCTIONS -->
+<section id="construct" hidden>
+  <div class="keyidea" style="border-left-color:var(--ro)">
+    <p class="big"><b>No grid? No problem.</b> Without coordinates there are no rules like (x, y) → (−x, y) to use. Instead, you use what each transformation keeps the same, and two tools to copy it exactly.</p>
+    <p class="note">A <b>compass</b> copies distances: open it to a length, and it will draw that same length anywhere. A <b>straightedge</b> (a ruler used without its markings) draws lines. A reflection keeps each point the same distance from the mirror line. A translation moves every point the same length and direction as a given arrow. A rotation keeps each point the same distance from the center and turns it through a given angle.</p>
+  </div>
+  <div class="lab">
+    <div class="board">
+      <svg id="coSvg" aria-label="Blank construction page"></svg>
+      <p class="hint">Red marks are the current step. Grey marks are earlier steps. A thick faded red bar shows a length the compass is measuring.</p>
+    </div>
+    <div>
+      <div class="panel">
+        <h2>Construct it step by step</h2>
+        <div class="seg types" id="coType">
+          <button data-t="reflect" aria-pressed="true">Reflection</button>
+          <button data-t="translate" aria-pressed="false">Translation</button>
+          <button data-t="rotate" aria-pressed="false">Rotation</button>
+        </div>
+        <p class="what" id="coGiven" style="margin-top:12px"></p>
+        <ol class="costeps" id="coSteps"></ol>
+        <div class="row">
+          <button class="btn ghost" id="coPrev">Previous step</button>
+          <button class="btn" id="coNext">Next step</button>
+          <button class="btn ghost" id="coAll">Show all steps</button>
+        </div>
+        <div class="why" id="coWhy"></div>
+      </div>
+    </div>
+  </div>
+
+  <h2 style="margin-top:34px;font-size:1.6rem">Practice without a grid</h2>
+  <p class="note">No coordinates here. Use what each transformation keeps the same. You can sketch the construction on paper first.</p>
+  <div class="lab">
+    <div class="board">
+      <svg id="ngSvg" aria-label="Blank page for practice"></svg>
+      <p class="hint" id="ngHint"></p>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="seg" id="ngMode">
+          <button data-m="place" aria-pressed="true">Place the image</button>
+          <button data-m="name" aria-pressed="false">Name the transformation</button>
+          <button data-m="steps" aria-pressed="false">Construction questions</button>
+        </div>
+        <div class="score">
+          <div><b id="ngC">0</b>correct</div>
+          <div><b id="ngT">0</b>answered</div>
+        </div>
+        <div id="ngCard"></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+<footer class="wrap">Rotations are counterclockwise unless marked clockwise. Coordinates are rounded to two decimal places when needed.</footer>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const NS='http://www.w3.org/2000/svg';
+const reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);if(attrs)for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+const clean=v=>{const r=Math.round(v*1000)/1000;return Object.is(r,-0)?0:r;};
+const fmt=v=>{v=clean(v);const s=Number.isInteger(v)?String(v):v.toFixed(2);return s.replace('-','−');};
+const fmtPt=p=>`(${fmt(p[0])}, ${fmt(p[1])})`;
+const rand=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const nz=(a,b)=>{let v=0;while(v===0)v=rand(a,b);return v;};
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const LET='ABCDEFGHIJ', TLET='PQRSTUVWXY';
+const CLS={translate:'tr',reflect:'rf',rotate:'ro',dilate:'di'};
+
+/* ---------- geometry ---------- */
+function reflect(p,line,k){k=k||0;const[x,y]=p;switch(line){case'x-axis':return[x,-y];case'y-axis':return[-x,y];case'y=x':return[y,x];case'y=-x':return[-y,-x];case'x=k':return[2*k-x,y];case'y=k':return[x,2*k-y];}return p;}
+function rotate(p,deg,cx,cy){cx=cx||0;cy=cy||0;const t=deg*Math.PI/180,c=Math.cos(t),s=Math.sin(t),dx=p[0]-cx,dy=p[1]-cy;return[clean(cx+dx*c-dy*s),clean(cy+dx*s+dy*c)];}
+function applyStep(p,s){if(s.type==='dilate')return[s.cx+(p[0]-s.cx)*s.k,s.cy+(p[1]-s.cy)*s.k];if(s.type==='translate')return[p[0]+s.a,p[1]+s.b];if(s.type==='reflect')return reflect(p,s.line,s.k);return rotate(p,s.angle,s.cx,s.cy);}
+function partialStep(p,s,t){if(s.type==='dilate'){const f=1+(s.k-1)*t;return[s.cx+(p[0]-s.cx)*f,s.cy+(p[1]-s.cy)*f];}if(s.type==='translate')return[p[0]+s.a*t,p[1]+s.b*t];if(s.type==='rotate')return rotate(p,s.angle*t,s.cx,s.cy);const q=reflect(p,s.line,s.k);return[p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t];}
+const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+function area2(pts){let s=0;for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];s+=a[0]*b[1]-b[0]*a[1];}return s;}
+function angleAt(pts,i){const n=pts.length,a=pts[(i-1+n)%n],b=pts[i],c=pts[(i+1)%n];
+  const v1=[a[0]-b[0],a[1]-b[1]],v2=[c[0]-b[0],c[1]-b[1]];
+  const d=(v1[0]*v2[0]+v1[1]*v2[1])/(Math.hypot(...v1)*Math.hypot(...v2)||1);
+  let ang=Math.acos(Math.max(-1,Math.min(1,d)))*180/Math.PI;
+  const e1=[b[0]-a[0],b[1]-a[1]],e2=[c[0]-b[0],c[1]-b[1]];const turn=e1[0]*e2[1]-e1[1]*e2[0];
+  if(turn*Math.sign(area2(pts))<-1e-9)ang=360-ang;return ang;}
+const samePts=(A,B)=>A.length===B.length&&A.every((p,i)=>Math.abs(p[0]-B[i][0])<1e-6&&Math.abs(p[1]-B[i][1])<1e-6);
+const sameSet=(A,B)=>A.length===B.length&&A.every(p=>B.some(q=>Math.abs(p[0]-q[0])<1e-6&&Math.abs(p[1]-q[1])<1e-6));
+const inRange=(pts,R)=>pts.every(p=>Math.abs(p[0])<=R&&Math.abs(p[1])<=R);
+
+/* ---------- words ---------- */
+function lineName(line,k){return{'x-axis':'the x-axis','y-axis':'the y-axis','y=x':'the line y = x','y=-x':'the line y = −x','x=k':`the line x = ${fmt(k||0)}`,'y=k':`the line y = ${fmt(k||0)}`}[line];}
+function signed(v){v=clean(v);return v<0?`− ${fmt(-v)}`:`+ ${fmt(v)}`;}
+function angleName(d){const a=Math.abs(d)%360;if(a===0)return'0°';if(a===180)return'180°';return d>0?`${a}° counterclockwise`:`${a}° clockwise`;}
+function centerName(s){return(s.cx||0)===0&&(s.cy||0)===0?'the origin':`(${fmt(s.cx)}, ${fmt(s.cy)})`;}
+function stepText(s){
+  if(s.type==='dilate')return`Dilation by scale factor ${fmt(s.k)} about ${centerName(s)}`;
+  if(s.type==='translate')return`Translation (x, y) → (x ${signed(s.a)}, y ${signed(s.b)})`;
+  if(s.type==='reflect')return`Reflection over ${lineName(s.line,s.k)}`;
+  return`Rotation ${angleName(s.angle)} about ${centerName(s)}`;}
+function ruleText(s){
+  if(s.type==='translate')return`(x, y) → (x ${signed(s.a)}, y ${signed(s.b)})`;
+  if(s.type==='reflect'){const k=s.k||0;return{'x-axis':'(x, y) → (x, −y)','y-axis':'(x, y) → (−x, y)','y=x':'(x, y) → (y, x)','y=-x':'(x, y) → (−y, −x)','x=k':`(x, y) → (${fmt(2*k)} − x, y)`,'y=k':`(x, y) → (x, ${fmt(2*k)} − y)`}[s.line];}
+  const n=((s.angle%360)+360)%360,h=s.cx||0,k=s.cy||0;
+  if(n===0||n===360)return'(x, y) → (x, y)';
+  if(h===0&&k===0){if(n===90)return'(x, y) → (−y, x)';if(n===180)return'(x, y) → (−x, −y)';if(n===270)return'(x, y) → (y, −x)';const th=fmt(s.angle)+'°';return`(x, y) → (x cos ${th} − y sin ${th}, x sin ${th} + y cos ${th})`;}
+  if(n===90)return`(x, y) → (${fmt(h)} − (y − ${fmt(k)}), ${fmt(k)} + (x − ${fmt(h)}))`;
+  if(n===180)return`(x, y) → (${fmt(2*h)} − x, ${fmt(2*k)} − y)`;
+  if(n===270)return`(x, y) → (${fmt(h)} + (y − ${fmt(k)}), ${fmt(k)} − (x − ${fmt(h)}))`;
+  return`Rotate ${n}° around (${fmt(h)}, ${fmt(k)}): every point keeps its distance from the center`;}
+const EXPLAIN={
+  translate:'A translation slides every point of the figure the same distance in the same direction. Nothing turns and nothing flips. The arrows from each vertex to its image are parallel and equal in length: together they show the translation vector.',
+  reflect:'A reflection flips the figure over a line, called the line of reflection, like a mirror image. Each image point is the same distance from the line as the original point, on the opposite side. The dashed segment joining a point to its image is perpendicular to the line, and the line cuts it exactly in half. Read the vertex letters around the figure: their order reverses, so a reflection changes orientation.',
+  rotate:'A rotation turns every point of the figure around a fixed point, the center of rotation, through the same angle. Each point stays the same distance from the center, so it travels along a circle (the dashed arcs). Counterclockwise is the positive direction.'};
+
+/* ---------- drawing ---------- */
+function drawGrid(svg,R,size){
+  svg.setAttribute('viewBox',`0 0 ${size} ${size}`);svg.innerHTML='';
+  const u=size/(2*R),X=x=>size/2+x*u,Y=y=>size/2-y*u;
+  const g=el('g',null,svg);
+  for(let i=-R;i<=R;i++){if(i===0)continue;el('line',{x1:X(i),y1:0,x2:X(i),y2:size,class:'gl'},g);el('line',{x1:0,y1:Y(i),x2:size,y2:Y(i),class:'gl'},g);}
+  el('line',{x1:X(0),y1:0,x2:X(0),y2:size,class:'axis'},g);el('line',{x1:0,y1:Y(0),x2:size,y2:Y(0),class:'axis'},g);
+  const step=R>8?2:2;
+  for(let i=-R+1;i<R;i++){if(i===0||i%step)continue;
+    el('text',{x:X(i),y:Y(0)+15,class:'tick','text-anchor':'middle'},g).textContent=fmt(i);
+    el('text',{x:X(0)-6,y:Y(i)+4,class:'tick','text-anchor':'end'},g).textContent=fmt(i);}
+  el('text',{x:size-12,y:Y(0)-8,class:'axlab'},g).textContent='x';
+  el('text',{x:X(0)+8,y:14,class:'axlab'},g).textContent='y';
+  return{X,Y,u,size,R,svg};}
+function drawPoly(M,parent,pts,cls,labels,opts){
+  opts=opts||{};const g=el('g',null,parent);
+  el('polygon',{points:pts.map(p=>`${M.X(p[0])},${M.Y(p[1])}`).join(' '),class:'poly '+cls},g);
+  if(opts.noVerts)return g;
+  const cx=pts.reduce((s,p)=>s+p[0],0)/pts.length,cy=pts.reduce((s,p)=>s+p[1],0)/pts.length;
+  pts.forEach((p,i)=>{
+    el('circle',{cx:M.X(p[0]),cy:M.Y(p[1]),r:opts.r||4,class:'vtx '+cls},g);
+    if(labels){let dx=p[0]-cx,dy=p[1]-cy;const L=Math.hypot(dx,dy);if(L<1e-9){dx=.7;dy=.7;}else{dx/=L;dy/=L;}
+      const t=el('text',{x:M.X(p[0])+dx*15,y:M.Y(p[1])-dy*15+5,class:'vlab '+cls,'text-anchor':'middle'},g);t.textContent=labels[i];}
+  });return g;}
+function lineEnds(line,k,R){k=k||0;return{'x-axis':[[-R,0],[R,0]],'y-axis':[[0,-R],[0,R]],'y=x':[[-R,-R],[R,R]],'y=-x':[[-R,R],[R,-R]],'x=k':[[k,-R],[k,R]],'y=k':[[-R,k],[R,k]]}[line];}
+function drawMirror(M,g,line,k,label){const[p,q]=lineEnds(line,k,M.R);
+  el('line',{x1:M.X(p[0]),y1:M.Y(p[1]),x2:M.X(q[0]),y2:M.Y(q[1]),class:'mirror'},g);
+  if(label){let lx=q[0],ly=q[1];const t=el('text',{class:'mirror-lab','text-anchor':'end'},g);
+    let x=M.X(lx)-6,y=M.Y(ly)+16;if(line==='x-axis'||line==='y=k'){x=M.size-8;y=M.Y(ly)-8;}if(line==='y=-x'){x=M.size-8;y=M.size-10;}
+    t.setAttribute('x',x);t.setAttribute('y',y);t.textContent={'x-axis':'x-axis','y-axis':'y-axis','y=x':'y = x','y=-x':'y = −x','x=k':`x = ${fmt(k)}`,'y=k':`y = ${fmt(k)}`}[line];}}
+function drawCenter(M,g,cx,cy,label){el('circle',{cx:M.X(cx),cy:M.Y(cy),r:6,class:'center'},g);
+  if(label)el('text',{x:M.X(cx)+9,y:M.Y(cy)+18,class:'center-lab'},g).textContent='center';}
+function arrow(M,g,a,b,cls){const x1=M.X(a[0]),y1=M.Y(a[1]),x2=M.X(b[0]),y2=M.Y(b[1]);const L=Math.hypot(x2-x1,y2-y1);if(L<8)return;
+  const ux=(x2-x1)/L,uy=(y2-y1)/L,ex=x2-ux*6,ey=y2-uy*6;
+  el('line',{x1,y1,x2:ex,y2:ey,class:'trace '+cls},g);
+  const h=9,w=4.5;el('polygon',{points:`${ex+ux*4},${ey+uy*4} ${ex-ux*h-uy*w},${ey-uy*h+ux*w} ${ex-ux*h+uy*w},${ey-uy*h-ux*w}`,class:'arrowhead '+cls},g);}
+function arrowAt(g,tip,dir,cls){const L=Math.hypot(dir[0],dir[1])||1,ux=dir[0]/L,uy=dir[1]/L,h=10,w=5,bx=tip[0]-ux*h,by=tip[1]-uy*h;
+  el('polygon',{points:`${tip[0]},${tip[1]} ${bx-uy*w},${by+ux*w} ${bx+uy*w},${by-ux*w}`,class:'arrowhead '+cls},g);}
+function arc(M,g,p,s){const r=dist(p,[s.cx,s.cy]);if(r<0.05)return;const a=Math.abs(s.angle)%360;if(a===0)return;
+  const q=rotate(p,s.angle,s.cx,s.cy),R=r*M.u,cw=s.angle<0;
+  const C=[M.X(s.cx),M.Y(s.cy)],P=[M.X(p[0]),M.Y(p[1])],Q=[M.X(q[0]),M.Y(q[1])];
+  el('line',{x1:C[0],y1:C[1],x2:P[0],y2:P[1],class:'trace ro',opacity:.55},g);
+  el('line',{x1:C[0],y1:C[1],x2:Q[0],y2:Q[1],class:'trace ro',opacity:.55},g);
+  // SVG sweep-flag 1 = clockwise on screen
+  el('path',{d:`M ${P[0]} ${P[1]} A ${R} ${R} 0 ${a>180?1:0} ${cw?1:0} ${Q[0]} ${Q[1]}`,class:'trace ro'},g);
+  const aq=Math.atan2(Q[1]-C[1],Q[0]-C[0]),sg=cw?1:-1;arrowAt(g,Q,[-sg*Math.sin(aq),sg*Math.cos(aq)],'ro');}
+
+function animate(dur,frame,done){if(reduceMotion){frame(1);done&&done();return;}
+  const t0=performance.now();function f(now){let t=Math.min(1,(now-t0)/dur);const e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;frame(e);if(t<1)requestAnimationFrame(f);else done&&done();}requestAnimationFrame(f);}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===b?'true':'false'));
+  ['explore','practice','congruence','construct'].forEach(id=>{$('#'+id).hidden=id!==b.dataset.tab;});
+}));
+
+/* =========================================================
+   EXPLORE
+========================================================= */
+const SHAPES={
+  triangle:{name:'Triangle',pts:[[1,1],[5,1],[2,4]]},
+  L:{name:'L-shape',pts:[[1,1],[3,1],[3,2],[2,2],[2,4],[1,4]]},
+  quad:{name:'Quadrilateral',pts:[[1,1],[4,2],[3,5],[1,3]]},
+  arrow:{name:'Arrow',pts:[[1,2],[4,2],[4,1],[6,3],[4,5],[4,4],[1,4]]}
+};
+const ex={shape:'L',pts:SHAPES.L.pts.map(p=>p.slice()),type:'translate',a:4,b:-5,line:'y-axis',k:2,angle:90,dir:1,cx:0,cy:0,traces:true,t:1};
+const shapeSeg=$('#shapeSeg');
+Object.keys(SHAPES).forEach(k=>{const b=document.createElement('button');b.textContent=SHAPES[k].name;b.dataset.s=k;b.setAttribute('aria-pressed',k===ex.shape);
+  b.onclick=()=>{ex.shape=k;ex.pts=SHAPES[k].pts.map(p=>p.slice());shapeSeg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));ex.t=1;renderExplore();};shapeSeg.appendChild(b);});
+$('#typeSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{ex.type=b.dataset.t;$('#typeSeg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  $('#pTranslate').hidden=ex.type!=='translate';$('#pReflect').hidden=ex.type!=='reflect';$('#pRotate').hidden=ex.type!=='rotate';ex.t=1;renderExplore();playEx();});
+function bindRange(id,key,suffix){const r=$('#'+id),o=$('#'+id+'O');r.addEventListener('input',()=>{ex[key]=+r.value;o.textContent=fmt(+r.value)+(suffix||'');ex.t=1;renderExplore();});}
+bindRange('ta','a');bindRange('tb','b');bindRange('rk','k');bindRange('ang','angle','°');bindRange('cx','cx');bindRange('cy','cy');
+$('#rl').addEventListener('change',e=>{ex.line=e.target.value;$('#rkRow').hidden=!(ex.line==='x=k'||ex.line==='y=k');ex.t=1;renderExplore();playEx();});
+function setDir(d){ex.dir=d;$('#dirSeg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',+x.dataset.d===d));}
+$('#dirSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{setDir(+b.dataset.d);ex.t=1;renderExplore();playEx();});
+$('#angQuick').querySelectorAll('button').forEach(b=>b.onclick=()=>{ex.angle=+b.dataset.a;setDir(+b.dataset.d);$('#ang').value=ex.angle;$('#angO').textContent=ex.angle+'°';ex.t=1;renderExplore();playEx();});
+$('#traces').addEventListener('change',e=>{ex.traces=e.target.checked;renderExplore();});
+$('#resetShape').onclick=()=>{ex.pts=SHAPES[ex.shape].pts.map(p=>p.slice());ex.t=1;renderExplore();};
+$('#play').onclick=playEx;
+let exAnimating=false;
+function playEx(){if(exAnimating)return;exAnimating=true;animate(1300,t=>{ex.t=t;renderExplore();},()=>{exAnimating=false;});}
+function exStep(){if(ex.type==='translate')return{type:'translate',a:ex.a,b:ex.b};if(ex.type==='reflect')return{type:'reflect',line:ex.line,k:ex.k};return{type:'rotate',angle:ex.dir*ex.angle,cx:ex.cx,cy:ex.cy};}
+
+function renderExplore(){
+  const svg=$('#exSvg'),M=drawGrid(svg,10,600),s=exStep(),c=CLS[s.type];
+  const layer=el('g',null,svg);
+  if(s.type==='reflect')drawMirror(M,layer,s.line,s.k,true);
+  const full=ex.pts.map(p=>applyStep(p,s));
+  const cur=ex.pts.map(p=>partialStep(p,s,ex.t));
+  if(ex.traces){const tg=el('g',null,layer);
+    ex.pts.forEach((p,i)=>{
+      if(s.type==='translate')arrow(M,tg,p,full[i],'tr');
+      else if(s.type==='reflect'){const q=full[i];if(dist(p,q)>0.01){el('line',{x1:M.X(p[0]),y1:M.Y(p[1]),x2:M.X(q[0]),y2:M.Y(q[1]),class:'trace rf'},tg);el('circle',{cx:M.X((p[0]+q[0])/2),cy:M.Y((p[1]+q[1])/2),r:3,class:'mid'},tg);}}
+      else arc(M,tg,p,s);});}
+  const n=ex.pts.length,L=LET.slice(0,n).split(''),Lp=L.map(x=>x+'′');
+  drawPoly(M,layer,ex.pts,'pre',L);
+  drawPoly(M,layer,cur,c,Lp);
+  if(s.type==='rotate')drawCenter(M,layer,s.cx,s.cy,true);
+  const hg=el('g',null,layer);
+  ex.pts.forEach((p,i)=>{const h=el('circle',{cx:M.X(p[0]),cy:M.Y(p[1]),r:14,class:'handle','data-i':i},hg);});
+
+  // panel
+  const names={translate:'Translation',reflect:'Reflection',rotate:'Rotation'};
+  $('#exTitle').textContent=names[s.type]+': '+stepText(s).replace(/^(Translation|Reflection|Rotation)\s*/,'');
+  const rule=$('#exRule');rule.textContent=ruleText(s);rule.style.setProperty('--accent',`var(--${c})`);
+  $('#exWhat').textContent=EXPLAIN[s.type];
+  let h='<tr><th>Pre-image</th><th>Image</th></tr>';
+  ex.pts.forEach((p,i)=>{h+=`<tr><td>${L[i]}${fmtPt(p)}</td><td>${Lp[i]}${fmtPt(full[i])}</td></tr>`;});
+  $('#exCoords').innerHTML=h;
+  let m='<tr><th>Measure</th><th>Pre-image</th><th>Image</th><th>Same?</th></tr>';
+  for(let i=0;i<n;i++){const j=(i+1)%n,a=dist(ex.pts[i],ex.pts[j]),b=dist(full[i],full[j]),ok=Math.abs(a-b)<1e-6;
+    m+=`<tr><td>Side ${L[i]}${L[j]} / ${Lp[i]}${Lp[j]}</td><td>${fmt(a)}</td><td>${fmt(b)}</td><td class="${ok?'ok':'no'}">${ok?'Yes':'No'}</td></tr>`;}
+  for(let i=0;i<n;i++){const a=angleAt(ex.pts,i),b=angleAt(full,i),ok=Math.abs(a-b)<1e-4;
+    m+=`<tr><td>∠${L[i]} / ∠${Lp[i]}</td><td>${fmt(a)}°</td><td>${fmt(b)}°</td><td class="${ok?'ok':'no'}">${ok?'Yes':'No'}</td></tr>`;}
+  const A1=Math.abs(area2(ex.pts))/2,A2=Math.abs(area2(full))/2;
+  m+=`<tr><td>Area</td><td>${fmt(A1)}</td><td>${fmt(A2)}</td><td class="ok">Yes</td></tr>`;
+  $('#exMeasure').innerHTML=m;
+  const o1=area2(ex.pts)>0?'counterclockwise':'clockwise',o2=area2(full)>0?'counterclockwise':'clockwise';
+  $('#exOrient').innerHTML=`<div>${L.join('→')} runs <b>${o1}</b></div><div>${Lp.join('→')} runs <b>${o2}</b></div><div>${o1===o2?'Orientation kept':'Orientation reversed'}</div>`;
+}
+// dragging
+(function(){const svg=$('#exSvg');let drag=null;
+  function toGrid(e){const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(svg.getScreenCTM().inverse());
+    return[Math.max(-9,Math.min(9,Math.round((q.x-300)/30))),Math.max(-9,Math.min(9,Math.round((300-q.y)/30)))];}
+  svg.addEventListener('pointerdown',e=>{const t=e.target;if(t.classList&&t.classList.contains('handle')){drag=+t.getAttribute('data-i');svg.setPointerCapture(e.pointerId);e.preventDefault();}});
+  svg.addEventListener('pointermove',e=>{if(drag===null)return;const g=toGrid(e);const p=ex.pts[drag];if(p[0]!==g[0]||p[1]!==g[1]){ex.pts[drag]=g;ex.t=1;renderExplore();}});
+  const end=()=>{drag=null;};svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);})();
+renderExplore();
+
+/* =========================================================
+   PRACTICE
+========================================================= */
+const pr={mode:'mixed',c:0,t:0,s:0,q:null,lastConcept:-1};
+$('#prMode').querySelectorAll('button').forEach(b=>b.onclick=()=>{pr.mode=b.dataset.m;$('#prMode').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));newQ();});
+function score(ok){pr.t++;if(ok){pr.c++;pr.s++;}else pr.s=0;$('#scC').textContent=pr.c;$('#scT').textContent=pr.t;$('#scS').textContent=pr.s;}
+function randTriangle(lo,hi){for(let k=0;k<500;k++){const P=[[rand(lo,hi),rand(lo,hi)],[rand(lo,hi),rand(lo,hi)],[rand(lo,hi),rand(lo,hi)]];
+  const A=Math.abs(area2(P))/2;if(A<3)continue;const d=[dist(P[0],P[1]),dist(P[1],P[2]),dist(P[2],P[0])];
+  if(Math.abs(d[0]-d[1])<.01||Math.abs(d[1]-d[2])<.01||Math.abs(d[0]-d[2])<.01)continue;return P;}return[[1,1],[4,1],[1,3]];}
+function stepPool(){return[
+  {type:'translate',a:nz(-6,6),b:nz(-6,6)},{type:'translate',a:nz(-6,6),b:nz(-6,6)},
+  {type:'reflect',line:'x-axis'},{type:'reflect',line:'y-axis'},{type:'reflect',line:'y=x'},{type:'reflect',line:'y=-x'},
+  {type:'rotate',angle:90,cx:0,cy:0},{type:'rotate',angle:180,cx:0,cy:0},{type:'rotate',angle:-90,cx:0,cy:0}];}
+function drawHelpers(M,g,s){if(s.type==='reflect')drawMirror(M,g,s.line,s.k,true);if(s.type==='rotate')drawCenter(M,g,s.cx,s.cy,false);}
+
+function qPoint(){
+  let s,P,Q;for(let k=0;k<200;k++){
+    const r=Math.random();
+    if(r<.25)s={type:'translate',a:nz(-6,6),b:nz(-6,6)};
+    else if(r<.5)s={type:'reflect',line:pick(['x-axis','y-axis','y=x','y=-x'])};
+    else if(r<.65)s={type:'reflect',line:pick(['x=k','y=k']),k:nz(-3,3)};
+    else s={type:'rotate',angle:pick([90,180,-90]),cx:0,cy:0};
+    P=[nz(-6,6),nz(-6,6)];Q=applyStep(P,s);if(inRange([Q],9)&&!samePts([P],[Q]))break;}
+  return{kind:'point',tag:'Find the image',s,P,Q,
+    html:`<p class="qtext">Point <b>P${fmtPt(P)}</b> is transformed by a <b>${stepText(s).charAt(0).toLowerCase()+stepText(s).slice(1)}</b>. What are the coordinates of P′?</p>
+      <div class="coordin">P′( <input type="number" id="ax" aria-label="x-coordinate" step="1"> , <input type="number" id="ay" aria-label="y-coordinate" step="1"> )</div>
+      <div class="row"><button class="btn" id="chk">Check answer</button></div>`,
+    draw(show){const M=drawGrid($('#prSvg'),10,420),g=el('g',null,M.svg);drawHelpers(M,g,s);
+      el('circle',{cx:M.X(P[0]),cy:M.Y(P[1]),r:6,class:'pt vtx pre'},g);el('text',{x:M.X(P[0])+9,y:M.Y(P[1])-8,class:'vlab pre'},g).textContent='P';
+      if(show){const c=CLS[s.type];if(s.type==='translate')arrow(M,g,P,Q,'tr');else if(s.type==='rotate')arc(M,g,P,s);else el('line',{x1:M.X(P[0]),y1:M.Y(P[1]),x2:M.X(Q[0]),y2:M.Y(Q[1]),class:'trace rf'},g);
+        el('circle',{cx:M.X(Q[0]),cy:M.Y(Q[1]),r:6,class:'pt vtx '+c},g);el('text',{x:M.X(Q[0])+9,y:M.Y(Q[1])-8,class:'vlab '+c},g).textContent='P′';}},
+    check(){const x=parseFloat($('#ax').value),y=parseFloat($('#ay').value);if(isNaN(x)||isNaN(y))return null;
+      const ok=Math.abs(x-Q[0])<1e-6&&Math.abs(y-Q[1])<1e-6;
+      return{ok,msg:`<p>Rule: <b>${ruleText(s)}</b></p><p>So P${fmtPt(P)} → P′${fmtPt(Q)}.</p>`};}};}
+
+function qIdentify(){
+  let P,s,Q,pool;for(let k=0;k<300;k++){P=randTriangle(-5,5);pool=stepPool();s=pick(pool);Q=P.map(p=>applyStep(p,s));if(inRange(Q,9)&&!sameSet(P,Q))break;}
+  const others=shuffle(pool.filter(o=>o!==s&&!sameSet(P.map(p=>applyStep(p,o)),Q)));
+  // try to include varied types
+  const picked=[];const types=new Set([s.type]);
+  for(const o of others){if(picked.length<3&&!types.has(o.type)){picked.push(o);types.add(o.type);}}
+  for(const o of others){if(picked.length<3&&!picked.includes(o))picked.push(o);}
+  const opts=shuffle([s,...picked]);
+  return{kind:'identify',tag:'Name the transformation',s,P,Q,opts,
+    html:`<p class="qtext">Which transformation maps △ABC onto △A′B′C′?</p><div class="opts">${opts.map((o,i)=>`<button class="opt" data-i="${i}">${stepText(o)}</button>`).join('')}</div>`,
+    draw(show){const M=drawGrid($('#prSvg'),10,420),g=el('g',null,M.svg);if(show)drawHelpers(M,g,s);
+      drawPoly(M,g,P,'pre',['A','B','C']);drawPoly(M,g,Q,show?CLS[s.type]:'target',['A′','B′','C′']);},
+    choose(i){const ok=opts[i]===s;const why={translate:'Every vertex moved the same distance in the same direction, and the orientation stayed the same.',
+      reflect:'The figure was flipped: the vertex order A→B→C reverses direction, which only a reflection does.',
+      rotate:'The figure turned about the origin; each vertex stayed the same distance from (0, 0) and the orientation stayed the same.'}[s.type];
+      return{ok,msg:`<p>The answer is <b>${stepText(s)}</b>. ${why}</p><p>Check one vertex: A${fmtPt(P[0])} → A′${fmtPt(Q[0])} using ${ruleText(s)}.</p>`};}};}
+
+function qRule(){
+  let P,a,b,Q;for(let k=0;k<200;k++){P=randTriangle(-4,4);a=nz(-6,6);b=nz(-6,6);Q=P.map(p=>[p[0]+a,p[1]+b]);if(inRange(Q,9))break;}
+  return{kind:'rule',tag:'Write the rule',P,Q,s:{type:'translate',a,b},
+    html:`<p class="qtext">△ABC was translated to △A′B′C′. Write the translation rule.</p>
+      <div class="coordin">(x, y) → (x + <input type="number" id="ax" aria-label="change in x" step="1"> , y + <input type="number" id="ay" aria-label="change in y" step="1"> )</div>
+      <p class="note">Use a negative number for a move left or down.</p>
+      <div class="row"><button class="btn" id="chk">Check answer</button></div>`,
+    draw(show){const M=drawGrid($('#prSvg'),10,420),g=el('g',null,M.svg);if(show)P.forEach((p,i)=>arrow(M,g,p,Q[i],'tr'));drawPoly(M,g,P,'pre',['A','B','C']);drawPoly(M,g,Q,'tr',['A′','B′','C′']);},
+    check(){const x=parseFloat($('#ax').value),y=parseFloat($('#ay').value);if(isNaN(x)||isNaN(y))return null;const ok=x===a&&y===b;
+      return{ok,msg:`<p>Compare one vertex: A${fmtPt(P[0])} → A′${fmtPt(Q[0])}. The x-coordinate changes by ${fmt(a)} and the y-coordinate by ${fmt(b)}.</p><p>Rule: <b>(x, y) → (x ${signed(a)}, y ${signed(b)})</b>, which is ${Math.abs(a)} unit${Math.abs(a)>1?'s':''} ${a>0?'right':'left'} and ${Math.abs(b)} unit${Math.abs(b)>1?'s':''} ${b>0?'up':'down'}.</p>`};}};}
+
+const CONCEPTS=[
+  {q:'Which property is NOT always preserved by a reflection?',o:['Side lengths','Angle measures','Orientation (the order of vertices clockwise or counterclockwise)','Parallel lines stay parallel'],a:2,e:'A reflection is a flip, so the vertex order reverses. Lengths, angles and parallelism are all preserved.',lab:{pts:[[1,1],[5,1],[2,4]],steps:[{type:'reflect',line:'y-axis'}],tip:'Drag the vertices and try different lines of reflection. Compare the rows in the Measurements table and the orientation. Which one ever changes?'}},
+  {q:'A point (x, y) is rotated 180° about the origin. Which rule describes this?',o:['(x, y) → (−y, x)','(x, y) → (−x, −y)','(x, y) → (y, −x)','(x, y) → (x, −y)'],a:1,e:'A half-turn sends each point to the opposite side of the origin, so both coordinates change sign.',lab:{pts:[[3,2]],steps:[{type:'rotate',angle:180}],tip:'Drag P to a few different places and compare P with P′ in the coordinates table. What happens to each coordinate?'}},
+  {q:'What does a translation do to every point of a figure?',o:['Moves it the same distance in the same direction','Moves it the same distance from a fixed point','Moves it to the opposite side of a line','Moves it closer to the origin'],a:0,e:'A translation is a slide described by a single vector, applied to every point.',lab:{pts:[[1,1],[4,1],[1,3]],steps:[{type:'translate',a:4,b:-3}],tip:'Look at the arrows from each vertex to its image. Change the x and y values. Are the arrows ever different lengths or directions?'}},
+  {q:'Which of these is NOT a rigid transformation?',o:['Rotation of 270°','Reflection over y = x','Translation 5 units left','Dilation with scale factor 2'],a:3,e:'A dilation changes size, so it does not preserve lengths. Rigid transformations keep lengths and angles exactly the same.',lab:{pts:[[1,1],[4,1],[1,3]],steps:[{type:'dilate',k:2,cx:0,cy:0}],tip:'Switch Step 1 between all four types. Watch the Measurements table and the “Is it rigid?” box each time.'}},
+  {q:'P is reflected over line m to get P′. What is true about segment PP′?',o:['It is parallel to m','It is perpendicular to m and m cuts it in half','It has the same length as m','It always passes through the origin'],a:1,e:'The line of reflection is the perpendicular bisector of the segment joining any point to its image.',lab:{pts:[[4,1]],steps:[{type:'reflect',line:'y=x'}],tip:'Drag P around and try other lines. Read the box below: how far are P and P′ from the line, and at what angle does PP′ cross it?'}},
+  {q:'Reflecting a figure over one line and then over a second, parallel line gives the same result as a single…',o:['Rotation','Reflection','Translation','Dilation'],a:2,e:'Two reflections over parallel lines combine to a translation, twice the distance between the lines, perpendicular to them.',lab:{pts:[[-6,1],[-3,1],[-6,3]],steps:[{type:'reflect',line:'x=k',k:-1},{type:'reflect',line:'x=k',k:2}],tip:'Both lines are vertical, so they are parallel. Read the Net effect box. Then change k in either step and see what stays true.'}},
+  {q:'Reflecting a figure over two lines that intersect gives the same result as a single…',o:['Translation','Rotation about the intersection point','Reflection over the first line','Dilation'],a:1,e:'Two reflections over intersecting lines combine to a rotation about the intersection, through twice the angle between the lines.',lab:{pts:[[1,1],[4,1],[1,3]],steps:[{type:'reflect',line:'x-axis'},{type:'reflect',line:'y=x'}],tip:'The x-axis and the line y = x cross at the origin. Read the Net effect box, then try other pairs of lines that cross.'}},
+  {q:'Point A(4, −3) is rotated 90° counterclockwise about the origin. Where does it land?',o:['(3, 4)','(−3, −4)','(−4, 3)','(4, 3)'],a:0,e:'The 90° counterclockwise rule is (x, y) → (−y, x), so (4, −3) → (3, 4).',lab:{pts:[[2,1]],steps:[{type:'rotate',angle:90}],tip:'P starts at (2, 1). Drag it to (4, −3), or test the rule on a few easier points first.'}},
+  {q:'After a rotation, the image of a figure is…',o:['Congruent, with the same orientation','Congruent, with reversed orientation','Larger than the original','Similar but not congruent'],a:0,e:'Rotations preserve lengths and angles (congruent) and do not flip the figure, so orientation is kept.',lab:{pts:[[1,1],[5,1],[2,4]],steps:[{type:'rotate',angle:90}],tip:'Compare the Measurements table and the orientation. Try different angles, directions and centers.'}}
+];
+function qConcept(){let i;do{i=rand(0,CONCEPTS.length-1);}while(i===pr.lastConcept&&CONCEPTS.length>1);pr.lastConcept=i;const C=CONCEPTS[i];
+  const order=shuffle(C.o.map((_,j)=>j));
+  return{kind:'concept',tag:'Concept check',
+    html:`<p class="qtext">${C.q}</p><p class="trybox">Experiment first. The <b>Test it out</b> lab has been set up for this question. Change it, drag the grey vertices, and see what happens. Then choose your answer.</p><div class="opts">${order.map(j=>`<button class="opt" data-i="${j}">${C.o[j]}</button>`).join('')}</div>`,
+    draw(show){if(show)renderSB();else sbLoad(C.lab);},
+    choose(j){return{ok:j===C.a,msg:`<p>Answer: <b>${C.o[C.a]}</b>. ${C.e}</p>`};}};}
+
+function newQ(){
+  let m=pr.mode;if(m==='mixed'){const r=Math.random();m=r<.33?'point':r<.63?'identify':r<.8?'rule':'concept';}
+  const q={point:qPoint,identify:qIdentify,rule:qRule,concept:qConcept}[m]();pr.q=q;q.done=false;
+  const card=$('#prCard');
+  card.innerHTML=`<span class="tag">${q.tag}</span>${q.html}<div class="fb" id="fb" role="status"></div><div class="row"><button class="btn ghost" id="nextQ">${'Next question'}</button></div>`;
+  const isC=q.kind==='concept';$('#sbPanel').hidden=!isC;$('#prHint').hidden=!isC;
+  q.draw(false);
+  $('#nextQ').onclick=newQ;
+  if(q.check){const go=()=>{if(q.done)return;const r=q.check();if(!r){showFb(false,'<p>Enter both numbers first.</p>',true);return;}finish(r);};
+    $('#chk').onclick=go;card.querySelectorAll('input').forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter')go();}));}
+  if(q.choose){card.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(q.done)return;const j=+b.dataset.i;const r=q.choose(j);
+    card.querySelectorAll('.opt').forEach(x=>{x.disabled=true;const xi=+x.dataset.i;const isRight=q.kind==='concept'?xi===CONCEPTS[pr.lastConcept].a:q.opts[xi]===q.s;if(isRight)x.classList.add('right');});
+    if(!r.ok)b.classList.add('wrong');finish(r);});}
+}
+function showFb(ok,msg,neutral){const fb=$('#fb');fb.className='fb show '+(neutral?'bad':ok?'good':'bad');fb.innerHTML=`<b>${neutral?'Almost there':ok?'Correct!':'Not quite.'}</b>${msg}`;}
+function finish(r){const q=pr.q;q.done=true;score(r.ok);showFb(r.ok,r.msg);q.draw(true);
+  const c=$('#chk');if(c)c.disabled=true;$('#prCard').querySelectorAll('input').forEach(i=>i.disabled=true);$('#nextQ').classList.remove('ghost');$('#nextQ').focus();}
+
+/* ---------- concept-check sandbox ("Test it out") ---------- */
+const sb={pts:[],steps:[],t:null,anim:false,preset:null};
+function sbDefaultStep(type){return{translate:{type,a:3,b:-2},reflect:{type,line:'y-axis',k:0},rotate:{type,angle:90,dir:1,cx:0,cy:0},dilate:{type,k:2,cx:0,cy:0}}[type];}
+function sbNum(f,label,val,step){return`<label>${label}<input type="number" data-f="${f}" value="${val}" step="${step||1}"></label>`;}
+function sbLoad(lab){sb.preset=lab;sb.pts=lab.pts.map(p=>p.slice());sb.steps=lab.steps.map(s=>{const c=Object.assign({},s);if(c.type==='rotate'){c.dir=c.angle<0?-1:1;c.cx=c.cx||0;c.cy=c.cy||0;}if(c.type==='reflect')c.k=c.k||0;return c;});
+  sb.t=null;$('#sbTip').innerHTML='<b>Try this:</b> '+lab.tip;sbBuild();renderSB();}
+function sbBuild(){const w=$('#sbSteps');w.innerHTML='';
+  sb.steps.forEach((s,i)=>{const d=document.createElement('div');d.className='sbstep';
+    let h=`<b>Step ${i+1}</b><select data-f="type" aria-label="Step ${i+1} type">${[['translate','Translation'],['reflect','Reflection'],['rotate','Rotation'],['dilate','Dilation (not rigid)']].map(([v,n])=>`<option value="${v}"${s.type===v?' selected':''}>${n}</option>`).join('')}</select>`;
+    if(s.type==='translate')h+=sbNum('a','x change',s.a)+sbNum('b','y change',s.b);
+    if(s.type==='reflect'){h+=`<label>over <select data-f="line">${[['x-axis','x-axis'],['y-axis','y-axis'],['y=x','y = x'],['y=-x','y = −x'],['x=k','x = k'],['y=k','y = k']].map(([v,n])=>`<option value="${v}"${s.line===v?' selected':''}>${n}</option>`).join('')}</select></label>`;if(s.line==='x=k'||s.line==='y=k')h+=sbNum('k','k',s.k);}
+    if(s.type==='rotate')h+=sbNum('mag','angle (°)',Math.abs(s.angle),15)+`<select data-f="dir" aria-label="Direction"><option value="1"${s.dir>0?' selected':''}>counterclockwise</option><option value="-1"${s.dir<0?' selected':''}>clockwise</option></select>`+sbNum('cx','center x',s.cx)+sbNum('cy','center y',s.cy);
+    if(s.type==='dilate')h+=sbNum('k','scale factor',s.k,0.5)+sbNum('cx','center x',s.cx)+sbNum('cy','center y',s.cy);
+    d.innerHTML=h;
+    d.querySelectorAll('[data-f]').forEach(inp=>inp.addEventListener(inp.tagName==='SELECT'?'change':'input',()=>{const f=inp.dataset.f,v=inp.value;
+      if(f==='type'){sb.steps[i]=sbDefaultStep(v);sbBuild();}
+      else if(f==='line'){s.line=v;s.k=s.k||0;sbBuild();}
+      else if(f==='mag'){const m=parseFloat(v);if(!isNaN(m))s.angle=s.dir*m;}
+      else if(f==='dir'){s.dir=+v;s.angle=Math.abs(s.angle)*s.dir;}
+      else{const n=parseFloat(v);if(!isNaN(n))s[f]=n;}
+      sb.t=null;renderSB();}));
+    w.appendChild(d);});
+  $('#sbAdd').textContent=sb.steps.length<2?'Add a second step':'Remove step 2';}
+$('#sbAdd').onclick=()=>{if(sb.anim)return;if(sb.steps.length<2)sb.steps.push(sbDefaultStep('reflect'));else sb.steps.pop();sbBuild();renderSB();};
+$('#sbReset').onclick=()=>{if(!sb.anim&&sb.preset)sbLoad(sb.preset);};
+$('#sbPlay').onclick=()=>{if(sb.anim)return;sb.anim=true;const n=sb.steps.length;animate(1200*n,t=>{sb.t=t*n;renderSB();},()=>{sb.anim=false;sb.t=null;renderSB();});};
+function sbChain(p,upto){let q=p;for(let i=0;i<sb.steps.length;i++){if(upto>=i+1)q=applyStep(q,sb.steps[i]);else{if(upto>i)q=partialStep(q,sb.steps[i],upto-i);break;}}return q;}
+function sbF(p){return sb.steps.reduce((q,s)=>applyStep(q,s),p);}
+function lineDescr(q,u){const E=1e-6;if(Math.abs(u[0])<E)return`x = ${fmt(q[0])}`;if(Math.abs(u[1])<E)return`y = ${fmt(q[1])}`;
+  const m=u[1]/u[0],b=q[1]-m*q[0];const ms=Math.abs(m-1)<E?'x':Math.abs(m+1)<E?'−x':`${fmt(m)}x`;return`y = ${ms}${Math.abs(b)<E?'':' '+signed(b)}`;}
+function classify(f){const E=1e-6,o=f([0,0]),a=f([1,0]),b=f([0,1]);const e1=[a[0]-o[0],a[1]-o[1]],e2=[b[0]-o[0],b[1]-o[1]];
+  const l1=Math.hypot(...e1),l2=Math.hypot(...e2),dt=e1[0]*e2[0]+e1[1]*e2[1],det=e1[0]*e2[1]-e1[1]*e2[0];
+  if(Math.abs(l1-1)>E||Math.abs(l2-1)>E||Math.abs(dt)>E){
+    if(Math.abs(l1-l2)<E&&Math.abs(dt)<E)return{rigid:false,text:`every length is multiplied by ${fmt(l1)}. The image has the same shape but a different size, so it is similar to the original, not congruent.`};
+    return{rigid:false,text:'lengths change, so the image is not congruent to the original.'};}
+  if(det>0){if(Math.abs(e1[0]-1)<E&&Math.abs(e1[1])<E){if(Math.hypot(...o)<E)return{rigid:true,same:true,text:'no change at all: everything ends up where it started'};
+      return{rigid:true,text:`a single translation, (x, y) → (x ${signed(o[0])}, y ${signed(o[1])})`};}
+    const th=Math.atan2(e1[1],e1[0]),c=Math.cos(th),s=Math.sin(th),A11=1-c,A12=s,A21=-s,A22=1-c,Dt=A11*A22-A12*A21;
+    const cx=(o[0]*A22-A12*o[1])/Dt,cy=(A11*o[1]-A21*o[0])/Dt;const deg=Math.round(th*180/Math.PI*1000)/1000;
+    return{rigid:true,text:`a single rotation of ${angleName(deg)} about (${fmt(cx)}, ${fmt(cy)})`};}
+  const phi=Math.atan2(e1[1],e1[0])/2,u=[Math.cos(phi),Math.sin(phi)];
+  const Mo=[e1[0]*o[0]+e2[0]*o[1],e1[1]*o[0]+e2[1]*o[1]],g=[(Mo[0]+o[0])/2,(Mo[1]+o[1])/2],q=[(o[0]-g[0])/2,(o[1]-g[1])/2];
+  if(Math.hypot(...g)<E)return{rigid:true,text:`a single reflection over the line ${lineDescr(q,u)}`};
+  return{rigid:true,text:`a glide reflection: a reflection over the line ${lineDescr(q,u)} followed by a slide of ⟨${fmt(g[0])}, ${fmt(g[1])}⟩ along that line. No single translation, reflection or rotation does this`};}
+function renderSB(){
+  const M=drawGrid($('#prSvg'),10,420),g=el('g',null,M.svg),n=sb.steps.length,single=sb.pts.length===1;
+  sb.steps.forEach(s=>{if(s.type==='reflect')drawMirror(M,g,s.line,s.k,true);if(s.type==='rotate'||s.type==='dilate')drawCenter(M,g,s.cx,s.cy,false);});
+  const stages=[sb.pts];sb.steps.forEach((s,i)=>stages.push(stages[i].map(p=>applyStep(p,s))));
+  const tg=el('g',null,g);
+  sb.steps.forEach((s,i)=>stages[i].forEach((p,j)=>{const q=stages[i+1][j];
+    if(s.type==='translate')arrow(M,tg,p,q,'tr');else if(s.type==='rotate')arc(M,tg,p,s);
+    else if(dist(p,q)>.01)el('line',{x1:M.X(p[0]),y1:M.Y(p[1]),x2:M.X(q[0]),y2:M.Y(q[1]),class:'trace '+CLS[s.type]},tg);}));
+  const base=single?['P']:LET.slice(0,sb.pts.length).split(''),L1=base.map(x=>x+'′'),L2=base.map(x=>x+'″');
+  drawPoly(M,g,sb.pts,'pre',base);
+  if(n===2)drawPoly(M,g,stages[1],'ghost',L1);
+  const cur=sb.t===null?stages[n]:sb.pts.map(p=>sbChain(p,sb.t));
+  drawPoly(M,g,cur,CLS[sb.steps[n-1].type],n===2?L2:L1);
+  const hg=el('g',null,g);sb.pts.forEach((p,i)=>el('circle',{cx:M.X(p[0]),cy:M.Y(p[1]),r:13,class:'handle','data-i':i},hg));
+  // coordinates
+  let h=`<tr><th>Pre-image</th>${n===2?'<th>After step 1</th>':''}<th>Final image</th></tr>`;
+  sb.pts.forEach((p,i)=>{h+=`<tr><td>${base[i]}${fmtPt(p)}</td>${n===2?`<td>${L1[i]}${fmtPt(stages[1][i])}</td>`:''}<td>${(n===2?L2:L1)[i]}${fmtPt(stages[n][i])}</td></tr>`;});
+  $('#sbCoords').innerHTML=h;
+  // measurements
+  const fin=stages[n],FL=n===2?L2:L1,np=sb.pts.length;$('#sbMeasWrap').hidden=np<2;
+  if(np>=2){let m='<tr><th>Measure</th><th>Pre-image</th><th>Final image</th><th>Same?</th></tr>';const sides=np===2?1:np;
+    for(let i=0;i<sides;i++){const j=(i+1)%np,a=dist(sb.pts[i],sb.pts[j]),b=dist(fin[i],fin[j]),ok=Math.abs(a-b)<1e-6;m+=`<tr><td>${base[i]}${base[j]} / ${FL[i]}${FL[j]}</td><td>${fmt(a)}</td><td>${fmt(b)}</td><td class="${ok?'ok':'no'}">${ok?'Yes':'No'}</td></tr>`;}
+    if(np>=3)for(let i=0;i<np;i++){const a=angleAt(sb.pts,i),b=angleAt(fin,i),ok=Math.abs(a-b)<1e-4;m+=`<tr><td>∠${base[i]} / ∠${FL[i]}</td><td>${fmt(a)}°</td><td>${fmt(b)}°</td><td class="${ok?'ok':'no'}">${ok?'Yes':'No'}</td></tr>`;}
+    $('#sbMeas').innerHTML=m;
+    if(np>=3){const o1=area2(sb.pts)>0?'counterclockwise':'clockwise',o2=area2(fin)>0?'counterclockwise':'clockwise';
+      $('#sbOrient').innerHTML=`<div>${base.join('→')} runs <b>${o1}</b></div><div>${FL.join('→')} runs <b>${o2}</b></div><div>${o1===o2?'Orientation kept':'Orientation reversed'}</div>`;}else $('#sbOrient').innerHTML='';}
+  // net effect / rigid check
+  const c=classify(sbF);let net;
+  if(n===1)net=c.rigid?'<b>Is it rigid?</b> Yes. Every length and angle stays the same.':`<b>Is it rigid?</b> No: ${c.text}`;
+  else net=!c.rigid?`<b>Net effect:</b> Not rigid, because ${c.text}`:c.same?'<b>Net effect:</b> Doing both steps puts everything back where it started.':`<b>Net effect:</b> Doing both steps is the same as ${c.text}.`;
+  if(n===1&&sb.steps[0].type==='reflect'&&single){const s=sb.steps[0],[A,B]=lineEnds(s.line,s.k,10),P=sb.pts[0],Q=fin[0];
+    const dl=p=>Math.abs((B[0]-A[0])*(p[1]-A[1])-(B[1]-A[1])*(p[0]-A[0]))/Math.hypot(B[0]-A[0],B[1]-A[1]);
+    if(dl(P)<1e-6)net+=' P is on the line, so P′ is the same point as P.';
+    else{const v=[Q[0]-P[0],Q[1]-P[1]],w=[B[0]-A[0],B[1]-A[1]],ang=Math.acos(Math.abs(v[0]*w[0]+v[1]*w[1])/(Math.hypot(...v)*Math.hypot(...w)))*180/Math.PI;
+      net+=`<br>P is ${fmt(dl(P))} units from the line and P′ is ${fmt(dl(Q))} units from it. Segment PP′ crosses the line at ${fmt(ang)}°.`;}}
+  $('#sbNet').innerHTML=net;}
+(function(){const svg=$('#prSvg');let drag=null;
+  const active=()=>pr.q&&pr.q.kind==='concept'&&!sb.anim;
+  function toGrid(e){const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(svg.getScreenCTM().inverse());
+    return[Math.max(-9,Math.min(9,Math.round((q.x-210)/21))),Math.max(-9,Math.min(9,Math.round((210-q.y)/21)))];}
+  svg.addEventListener('pointerdown',e=>{if(!active())return;const t=e.target;if(t.classList&&t.classList.contains('handle')){drag=+t.getAttribute('data-i');svg.setPointerCapture(e.pointerId);e.preventDefault();}});
+  svg.addEventListener('pointermove',e=>{if(drag===null)return;const g=toGrid(e),p=sb.pts[drag];if(p[0]!==g[0]||p[1]!==g[1]){sb.pts[drag]=g;sb.t=null;renderSB();}});
+  const end=()=>{drag=null;};svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);})();
+
+newQ();
+
+/* =========================================================
+   CONGRUENCE
+========================================================= */
+const Lsh=[[1,1],[3,1],[3,2],[2,2],[2,4],[1,4]];
+const LEVELS=[
+  {title:'Slide into place',goal:'Use one translation to map the L-shape onto the target.',start:Lsh.map(p=>[p[0]-8,p[1]+2]),seq:[{type:'translate',a:9,b:-6}],hint:'Compare vertex A with vertex P. How far right and how far down is it?'},
+  {title:'Mirror image',goal:'This triangle needs to be flipped. Find the right line of reflection.',start:[[2,1],[6,1],[3,4]],seq:[{type:'reflect',line:'y-axis'}],hint:'The target looks like a mirror image across a vertical line. Which vertical line is halfway between A and P?'},
+  {title:'A quarter turn',goal:'Map the L-shape onto the target with one rotation.',start:Lsh,seq:[{type:'rotate',angle:90,cx:0,cy:0}],hint:'Try a rotation about the origin. Where does A(1, 1) need to go?'},
+  {title:'Flip, then slide',goal:'One move won’t do it. Use two rigid transformations.',start:[[1,2],[5,2],[2,5]],seq:[{type:'reflect',line:'x-axis'},{type:'translate',a:-7,b:0}],hint:'The vertex order is reversed, so a reflection is needed. Reflect over the x-axis, then translate.'},
+  {title:'Same shape?',goal:'Can a sequence of rigid transformations map this triangle onto the target? Compare measurements before you decide.',start:[[1,1],[4,1],[1,3]],target:[[-8,-6],[-2,-6],[-8,-2]],congruent:false,why:'Every side of the target is twice as long as the matching side of △ABC. Rigid transformations never change length, so no sequence can map one onto the other. The figures are similar, not congruent.',hint:'Look at the side lengths table. Can a rigid motion change a length?'},
+  {title:'Turn, then slide',goal:'Map the L-shape onto the target using two steps.',start:Lsh,seq:[{type:'rotate',angle:180,cx:0,cy:0},{type:'translate',a:8,b:0}],hint:'The L is upside down and backwards but not flipped (check the vertex order). Try a 180° rotation, then a translation.'},
+  {title:'Equal sides, but…',goal:'Both figures have four sides of length 5. Are they congruent?',start:[[1,1],[6,1],[6,6],[1,6]],target:[[-9,-8],[-4,-8],[-1,-4],[-6,-4]],congruent:false,why:'All sides match, but the square’s angles are 90° while the rhombus has angles of about 53° and 127°. Rigid transformations preserve angles too, so these figures are not congruent. Matching sides alone isn’t enough for polygons with more than three sides.',hint:'Sides aren’t the whole story. Check the angle measures.'},
+  {title:'Three-move challenge',goal:'Find any sequence that works. There is more than one correct answer.',start:[[1,1],[4,1],[1,3]],seq:[{type:'reflect',line:'y-axis'},{type:'rotate',angle:90,cx:0,cy:0},{type:'translate',a:8,b:-2}],hint:'Orientation is reversed, so you need a reflection somewhere. One option: reflect over the y-axis, rotate 90° counterclockwise about the origin, then translate.'}
+];
+LEVELS.forEach(L=>{if(!L.target){L.target=L.start.map(p=>L.seq.reduce((q,s)=>applyStep(q,s),p));L.congruent=true;}});
+const cg={i:0,pts:null,steps:[],done:false,busy:false,type:'translate',solved:new Set()};
+const lvWrap=$('#cgLevels');
+LEVELS.forEach((L,i)=>{const b=document.createElement('button');b.textContent=i+1;b.setAttribute('aria-label','Challenge '+(i+1));b.onclick=()=>loadLevel(i);lvWrap.appendChild(b);});
+function loadLevel(i){cg.i=i;cg.pts=LEVELS[i].start.map(p=>p.slice());cg.steps=[];cg.done=false;cg.hint=false;
+  lvWrap.querySelectorAll('button').forEach((b,j)=>{b.setAttribute('aria-current',j===i);b.classList.toggle('solved',cg.solved.has(j));});
+  $('#cgTitle').textContent=`Challenge ${i+1}: ${LEVELS[i].title}`;$('#cgGoal').textContent=LEVELS[i].goal;
+  setStatus('','Plan your first move, then press Apply step. Watch the vertex letters: A must land on P, B on Q, and so on.');renderCg();}
+function setStatus(kind,html){const s=$('#cgStatus');s.className='status '+kind;s.innerHTML=html;}
+$('#cgType').querySelectorAll('button').forEach(b=>b.onclick=()=>{cg.type=b.dataset.t;$('#cgType').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  $('#cgPT').hidden=cg.type!=='translate';$('#cgPR').hidden=cg.type!=='reflect';$('#cgPO').hidden=cg.type!=='rotate';renderCg();});
+$('#cgLine').addEventListener('change',()=>{const v=$('#cgLine').value;$('#cgKL').hidden=!(v==='x=k'||v==='y=k');renderCg();});
+['cgA','cgB','cgK','cgCx','cgCy','cgAng'].forEach(id=>$('#'+id).addEventListener('input',()=>renderCg()));
+const num=id=>{const v=parseFloat($('#'+id).value);return isNaN(v)?0:v;};
+function cgStep(){if(cg.type==='translate')return{type:'translate',a:num('cgA'),b:num('cgB')};if(cg.type==='reflect')return{type:'reflect',line:$('#cgLine').value,k:num('cgK')};return{type:'rotate',angle:+$('#cgAng').value,cx:num('cgCx'),cy:num('cgCy')};}
+function renderCg(anim){
+  const L=LEVELS[cg.i],M=drawGrid($('#cgSvg'),10,600),g=el('g',null,M.svg),n=L.start.length;
+  const lab=LET.slice(0,n).split(''),tl=TLET.slice(0,n).split('');
+  if(!cg.done&&!cg.busy){const s=cgStep();if(s.type==='reflect')drawMirror(M,g,s.line,s.k,true);if(s.type==='rotate')drawCenter(M,g,s.cx,s.cy,true);}
+  if(cg.steps.length||cg.busy)drawPoly(M,g,L.start,'ghost',null,{noVerts:true});
+  drawPoly(M,g,L.target,'target',tl);
+  const cur=anim||cg.pts;const lastType=cg.busy?cg.busyType:(cg.steps.length?cg.steps[cg.steps.length-1].type:null);
+  drawPoly(M,g,cur,lastType?CLS[lastType]:'pre',lab);
+  // steps
+  $('#cgSteps').innerHTML=cg.steps.length?cg.steps.map(s=>`<li>${stepText(s)}</li>`).join(''):'<li style="list-style:none;margin-left:-1.4em;color:var(--muted)">No steps yet.</li>';
+  // measures
+  let m=`<tr><th>Your figure</th><th></th><th>Target</th><th></th></tr>`;
+  for(let i=0;i<n;i++){const j=(i+1)%n;const a=dist(L.start[i],L.start[j]),b=dist(L.target[i],L.target[j]);m+=`<tr><td>${lab[i]}${lab[j]}</td><td>${fmt(a)}</td><td>${tl[i]}${tl[j]}</td><td>${fmt(b)}</td></tr>`;}
+  for(let i=0;i<n;i++){const a=angleAt(L.start,i),b=angleAt(L.target,i);m+=`<tr><td>∠${lab[i]}</td><td>${fmt(a)}°</td><td>∠${tl[i]}</td><td>${fmt(b)}°</td></tr>`;}
+  $('#cgMeasure').innerHTML=m;
+  $('#cgApply').disabled=cg.done||cg.busy;$('#cgClaimRow').hidden=cg.done;$('#cgUndo').disabled=!cg.steps.length||cg.busy;}
+$('#cgApply').onclick=()=>{if(cg.busy||cg.done)return;const s=cgStep();const from=cg.pts.map(p=>p.slice());cg.busy=true;cg.busyType=s.type;
+  animate(900,t=>renderCg(from.map(p=>partialStep(p,s,t))),()=>{cg.busy=false;cg.pts=from.map(p=>applyStep(p,s));cg.steps.push(s);afterStep();renderCg();});};
+function afterStep(){const L=LEVELS[cg.i],n=L.start.length,lab=LET.slice(0,n),tl=TLET.slice(0,n);
+  if(samePts(cg.pts,L.target)){cg.done=true;cg.solved.add(cg.i);
+    const name=n===3?'△':'';setStatus('good',`<b>Mapped!</b> Your sequence of ${cg.steps.length} rigid transformation${cg.steps.length>1?'s':''} maps ${name}${lab} onto ${name}${tl}, so <b>${name}${lab} ≅ ${name}${tl}</b>. Corresponding parts match: ${lab[0]}${lab[1]} = ${tl[0]}${tl[1]}, ∠${lab[0]} ≅ ∠${tl[0]}, and so on.${cg.i<LEVELS.length-1?' <button class="btn" id="cgNext" style="margin-top:8px">Next challenge</button>':' You finished every challenge.'}`);
+    const nb=$('#cgNext');if(nb)nb.onclick=()=>loadLevel(cg.i+1);
+    lvWrap.children[cg.i].classList.add('solved');}
+  else if(sameSet(cg.pts,L.target)){setStatus('bad','<b>Close!</b> The figure covers the target, but the letters don’t line up (A should land on P). Try a different sequence.');}
+  else{const ori=Math.sign(area2(cg.pts))===Math.sign(area2(L.target));
+    setStatus('',L.congruent?`Not there yet. ${ori?'Orientation now matches the target, so you won’t need another reflection.':'Orientation is still reversed compared to the target, so a reflection is needed.'}`:'The figure moved, but notice its side lengths and angles never changed.');}}
+$('#cgUndo').onclick=()=>{if(!cg.steps.length)return;cg.steps.pop();const L=LEVELS[cg.i];cg.pts=L.start.map(p=>cg.steps.reduce((q,s)=>applyStep(q,s),p));cg.done=false;setStatus('','Step removed.');renderCg();};
+$('#cgReset').onclick=()=>loadLevel(cg.i);
+$('#cgNot').onclick=()=>{const L=LEVELS[cg.i];
+  if(!L.congruent){cg.done=true;cg.solved.add(cg.i);lvWrap.children[cg.i].classList.add('solved');
+    setStatus('good',`<b>Correct, they are not congruent.</b> ${L.why}${cg.i<LEVELS.length-1?' <button class="btn" id="cgNext" style="margin-top:8px">Next challenge</button>':''}`);const nb=$('#cgNext');if(nb)nb.onclick=()=>loadLevel(cg.i+1);renderCg();}
+  else setStatus('bad','<b>Look again.</b> Every side length and angle of your figure matches the target in the table below. When all corresponding parts match like this, a sequence of rigid transformations exists. Keep searching for it.');};
+$('#cgHint').onclick=()=>setStatus('',`<b>Hint:</b> ${LEVELS[cg.i].hint}`);
+loadLevel(0);
+
+/* think it through */
+const THINK=[
+  {q:'A sequence of rigid transformations maps △ABC onto △DEF, with A → D, B → E and C → F. Which statement must be true?',o:['AB = DE','AB = EF','∠A ≅ ∠E','AC = DE'],a:0,e:'Corresponding parts follow the mapping: A↔D and B↔E, so side AB corresponds to DE. Rigid motions preserve length, so AB = DE.'},
+  {q:'△ABC is reflected over the y-axis and then translated 4 units up. How does the final image compare to △ABC?',o:['It is congruent to △ABC','It is larger than △ABC','It is similar but not congruent','It is congruent only if △ABC is isosceles'],a:0,e:'Each step is a rigid transformation, so the whole sequence preserves every length and angle. Any sequence of rigid motions produces a congruent figure.'},
+  {q:'Figure 1 is mapped onto Figure 2 by a rotation followed by a dilation with scale factor 3. Are the figures congruent?',o:['Yes, because a rotation was used','No, because the dilation changed the size','Yes, because the shape didn’t change','It’s impossible to tell'],a:1,e:'A dilation is not rigid: it multiplies every length by 3. The figures are similar, not congruent.'},
+  {q:'Why do mathematicians define congruence using rigid transformations?',o:['Because they keep all lengths and angle measures the same, so the image is an exact copy','Because they always keep the figure in the same place','Because they always keep the same orientation','Because they make figures easier to draw'],a:0,e:'Rigid motions change only a figure’s position (and possibly its orientation), never its size or shape. That is exactly what “same size and same shape” means.'},
+  {q:'A square and a rhombus each have four sides of length 5. Are they congruent?',o:['Yes, all sides are equal','Not necessarily: their angles must also match','Yes, all quadrilaterals with equal sides are congruent','No, a square can never be congruent to a rhombus'],a:1,e:'Rigid motions preserve angles as well as sides. The rhombus is congruent to the square only if its angles are also 90°, and then it is a square.'},
+  {q:'△PQR ≅ △XYZ. Which statement is guaranteed by this congruence?',o:['There is a sequence of rigid transformations that maps △PQR onto △XYZ','△PQR and △XYZ are in the same position','△XYZ was made by a translation of △PQR','△PQR and △XYZ have the same orientation'],a:0,e:'That is the definition of congruence. The sequence might include a reflection, so orientation can differ, and the figures can be anywhere on the plane.'}
+];
+const think=$('#think');
+THINK.forEach((T,ti)=>{const p=document.createElement('div');p.className='panel';
+  const order=shuffle(T.o.map((_,j)=>j));
+  p.innerHTML=`<span class="tag">Question ${ti+1}</span><p class="qtext" style="margin-top:2px">${T.q}</p><div class="opts">${order.map(j=>`<button class="opt" data-i="${j}">${T.o[j]}</button>`).join('')}</div><div class="fb" role="status"></div>`;
+  const fb=p.querySelector('.fb');
+  p.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{const j=+b.dataset.i;p.querySelectorAll('.opt').forEach(x=>{x.disabled=true;if(+x.dataset.i===T.a)x.classList.add('right');});
+    const ok=j===T.a;if(!ok)b.classList.add('wrong');fb.className='fb show '+(ok?'good':'bad');fb.innerHTML=`<b>${ok?'Correct!':'Not quite.'}</b><p>${T.e}</p><button class="btn ghost" style="margin-top:8px">Try again</button>`;
+    fb.querySelector('button').onclick=()=>{p.querySelectorAll('.opt').forEach(x=>{x.disabled=false;x.classList.remove('right','wrong');});fb.className='fb';};});
+  think.appendChild(p);});
+
+/* =========================================================
+   CONSTRUCTIONS (no grid) — screen coordinates, y points down
+========================================================= */
+const V2={add:(a,b)=>[a[0]+b[0],a[1]+b[1]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1]],mul:(a,k)=>[a[0]*k,a[1]*k],len:a=>Math.hypot(a[0],a[1]),unit:a=>{const L=Math.hypot(a[0],a[1])||1;return[a[0]/L,a[1]/L];},dot:(a,b)=>a[0]*b[0]+a[1]*b[1]};
+const D2=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+const angS=(c,p)=>Math.atan2(p[1]-c[1],p[0]-c[0]);
+const polar=(c,r,a)=>[c[0]+r*Math.cos(a),c[1]+r*Math.sin(a)];
+// positive deg = counterclockwise as seen on screen
+function rotS(p,o,deg){const t=deg*Math.PI/180,c=Math.cos(t),s=Math.sin(t),dx=p[0]-o[0],dy=p[1]-o[1];return[o[0]+dx*c+dy*s,o[1]-dx*s+dy*c];}
+function footS(p,m1,m2){const u=V2.unit(V2.sub(m2,m1));return V2.add(m1,V2.mul(u,V2.dot(V2.sub(p,m1),u)));}
+function reflS(p,m1,m2){const f=footS(p,m1,m2);return[2*f[0]-p[0],2*f[1]-p[1]];}
+function cArc(g,c,r,a1,a2,cls){let d='';const n=60;for(let i=0;i<=n;i++){const p=polar(c,r,a1+(a2-a1)*i/n);d+=(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)+' ';}return el('path',{d,class:cls||'c-arc'},g);}
+function arcThrough(g,c,t,spread,cls){const a=angS(c,t);return cArc(g,c,D2(c,t),a-spread,a+spread,cls);}
+function cSeg(g,a,b,cls){return el('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],class:cls||'c-line'},g);}
+function measure(g,a,b,now){if(now)cSeg(g,a,b,'c-measure');}
+function cPt(g,p,label,off,cls){el('circle',{cx:p[0],cy:p[1],r:4.5,class:cls||'c-pt'},g);if(label){off=off||[10,-10];el('text',{x:p[0]+off[0],y:p[1]+off[1]+5,class:'c-lab','text-anchor':'middle'},g).textContent=label;}}
+function ext(a,b,extra){return V2.add(b,V2.mul(V2.unit(V2.sub(b,a)),extra));}
+function labOff(p,cen,d){const u=V2.unit(V2.sub(p,cen));return[u[0]*(d||16),u[1]*(d||16)];}
+function cTri(g,pts,cls,labels){el('polygon',{points:pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),class:'poly '+cls},g);
+  const c=[(pts[0][0]+pts[1][0]+pts[2][0])/3,(pts[0][1]+pts[1][1]+pts[2][1])/3];
+  pts.forEach((p,i)=>{el('circle',{cx:p[0],cy:p[1],r:4,class:'vtx '+cls},g);if(labels&&labels[i]){const o=labOff(p,c,17);el('text',{x:p[0]+o[0],y:p[1]+o[1]+5,class:'vlab '+cls,'text-anchor':'middle'},g).textContent=labels[i];}});}
+function turnArrow(g,O,r,a1,deg){const a2=a1-deg*Math.PI/180;cArc(g,O,r,a1,a2,'given-ang');const sg=Math.sign(a2-a1);arrowAt(g,polar(O,r,a2),[-sg*Math.sin(a2),sg*Math.cos(a2)],'ro');}
+function rightMark(g,F,u,v){const s=11;const p1=V2.add(F,V2.mul(u,s)),p2=V2.add(p1,V2.mul(v,s)),p3=V2.add(F,V2.mul(v,s));el('polyline',{points:[p1,p2,p3].map(p=>p.join(',')).join(' '),class:'c-dash',style:'stroke-dasharray:none'},g);}
+const ABC=['A','B','C'],ABCp=['A′','B′','C′'];
+
+function conReflect(){
+  const m1=[372,10],m2=[318,430],T=[[170,110],[110,300],[245,250]];
+  const A=T[0],F=footS(A,m1,m2),d=D2(A,F),r=d*1.45,u=V2.unit(V2.sub(m2,m1)),h=Math.sqrt(r*r-d*d);
+  const X=V2.sub(F,V2.mul(u,h)),Y=V2.add(F,V2.mul(u,h)),Ap=reflS(A,m1,m2),img=T.map(p=>reflS(p,m1,m2));
+  const aF=angS(A,F),del=Math.acos(d/r);
+  return{T,img,
+    given:'Given: △ABC and line m. Goal: reflect △ABC over line m.',
+    drawGiven(g){cSeg(g,m1,m2,'m-line');el('text',{x:m1[0]+14,y:m1[1]+22,class:'c-lab'},g).textContent='m';cTri(g,T,'pre',ABC);},
+    steps:[
+      {tool:'compass',t:'Put the compass point on A. Draw an arc that crosses line m in two places. Label the crossings X and Y.',
+       why:'X and Y are the same distance from A, because they are on the same circle around A.',
+       d(g){cArc(g,A,r,aF-del-0.18,aF+del+0.18);cPt(g,X,'X',[16,0]);cPt(g,Y,'Y',[16,4]);}},
+      {tool:'compass',t:'Keep the same compass width. Put the point on X and draw an arc on the other side of m.',
+       why:'Any point on this arc is exactly as far from X as A is.',
+       d(g,now){measure(g,X,A,now);arcThrough(g,X,Ap,0.4);}},
+      {tool:'compass',t:'Keep the same width again. Put the point on Y and draw an arc that crosses the last arc. Label the crossing A′.',
+       why:'A′ is the same distance from X and from Y as A is. That makes line m the perpendicular bisector of AA′, which is exactly what a reflection needs.',
+       d(g,now){measure(g,Y,A,now);arcThrough(g,Y,Ap,0.4);cPt(g,Ap,'A′',labOff(Ap,F,18));}},
+      {tool:'straightedge',t:'Check with the straightedge: draw segment AA′. It should cross m at a right angle, and m should cut it in half.',
+       why:'In a reflection, the mirror line is the perpendicular bisector of every segment joining a point to its image.',
+       d(g){cSeg(g,A,Ap,'c-dash');rightMark(g,F,V2.mul(u,-1),V2.unit(V2.sub(Ap,A)));}},
+      {tool:'both',t:'Repeat steps 1 to 3 for B and for C to get B′ and C′. Then join A′, B′ and C′ with the straightedge.',
+       why:'△A′B′C′ is the reflection of △ABC. Notice the vertex order is reversed: reflections flip orientation.',
+       d(g){T.slice(1).forEach((p,i)=>cSeg(g,p,img[i+1],'c-dash'));cTri(g,img,'rf',['','B′','C′']);}}
+    ]};}
+
+function conTranslate(){
+  const S=[70,395],E=[255,335],v=V2.sub(E,S),vl=V2.len(v),T=[[120,175],[90,300],[190,290]];
+  const A=T[0],Ap=V2.add(A,v),img=T.map(p=>V2.add(p,v));
+  return{T,img,
+    given:'Given: △ABC and the translation arrow from S to T. Goal: translate △ABC along the arrow.',
+    drawGiven(g){cSeg(g,S,E,'v-line');arrowAt(g,E,v,'tr');cPt(g,S,'S',[-6,16]);cPt(g,E,'T',[10,16]);cTri(g,T,'pre',ABC);},
+    steps:[
+      {tool:'compass',t:'Open the compass to the length of the arrow: point on S, pencil on T.',
+       why:'This length is the distance every point of the figure must travel.',
+       d(g,now){measure(g,S,E,now);cArc(g,S,vl,angS(S,E)-0.22,angS(S,E)+0.22);}},
+      {tool:'compass',t:'Keep that width. Put the compass point on A and draw an arc in the direction the arrow points.',
+       why:'A′ must be exactly the arrow’s length away from A, so it is somewhere on this arc.',
+       d(g,now){measure(g,A,Ap,now);arcThrough(g,A,Ap,0.45);}},
+      {tool:'compass',t:'Now open the compass to the distance from S to A.',
+       why:'In the finished picture, the distance from T to A′ will equal the distance from S to A.',
+       d(g,now){measure(g,S,A,now);cSeg(g,S,A,'c-dash');}},
+      {tool:'compass',t:'Keep that width. Put the point on T and draw an arc that crosses the first arc. Label the crossing A′.',
+       why:'Now S, T, A′ and A form a parallelogram (both pairs of opposite sides are equal). So AA′ is parallel to ST and the same length. If the two arcs cross twice, pick the crossing that makes a parallelogram, not a crossed shape.',
+       d(g,now){measure(g,E,Ap,now);arcThrough(g,E,Ap,0.35);cPt(g,Ap,'A′',[12,-12]);}},
+      {tool:'straightedge',t:'Draw segment AA′ with the straightedge. Check that it is parallel to ST and points the same way.',
+       why:'Every point moves along a segment parallel to and as long as the arrow. That is what a translation means.',
+       d(g){cSeg(g,A,Ap,'c-dash');arrowAt(g,Ap,v,'ink');cSeg(g,E,Ap,'c-dash');}},
+      {tool:'both',t:'Repeat steps 2 to 4 for B and C to get B′ and C′. Then join A′, B′ and C′.',
+       why:'△A′B′C′ is the translation of △ABC. Matching sides are parallel and the orientation is unchanged.',
+       d(g){T.slice(1).forEach((p,i)=>{cSeg(g,p,img[i+1],'c-dash');});cTri(g,img,'tr',['','B′','C′']);}}
+    ]};}
+
+function conRotate(){
+  const O=[300,300],th=75,thr=th*Math.PI/180,T=[[430,275],[500,370],[410,385]],V=[70,170],r0=55;
+  const A=T[0],aA=angS(O,A),OA=D2(O,A),Dg=polar(V,r0,0),Eg=polar(V,r0,-thr),D1=polar(O,r0,aA),E1=polar(O,r0,aA-thr),Ap=polar(O,OA,aA-thr),img=T.map(p=>rotS(p,O,th));
+  return{T,img,
+    given:'Given: △ABC, the center of rotation O, and the angle of rotation, ∠V (75° counterclockwise). Goal: rotate △ABC about O.',
+    drawGiven(g){cPt(g,O,'O',[-14,10]);cSeg(g,V,polar(V,135,0),'given-ang');cSeg(g,V,polar(V,135,-thr),'given-ang');
+      cPt(g,V,'V',[-12,8]);turnArrow(g,V,26,-0.05,th-6);el('text',{x:V[0]-20,y:V[1]+34,class:'c-small'},g).textContent='turn 75° counterclockwise';cTri(g,T,'pre',ABC);},
+    steps:[
+      {tool:'straightedge',t:'Use the straightedge to draw a ray from O through A, continuing past A.',
+       why:'This ray is where the turn starts. A′ will be the same distance from O, turned through the given angle.',
+       d(g){cSeg(g,O,ext(O,A,40));}},
+      {tool:'compass',t:'Put the compass point on V, the vertex of the given angle. Draw an arc that crosses both sides of the angle. Label the crossings D and E.',
+       why:'Points D and E capture how wide the angle opens, so it can be copied.',
+       d(g){cArc(g,V,r0,0.18,-thr-0.18);cPt(g,Dg,'D',[6,16]);cPt(g,Eg,'E',labOff(Eg,V,16));}},
+      {tool:'compass',t:'Keep the same width. Put the point on O and draw a long arc that starts at ray OA and sweeps in the direction of the turn. Label where it crosses ray OA as D′.',
+       why:'This arc has the same radius as the arc at V, so the angle can be copied onto it.',
+       d(g,now){measure(g,V,Dg,now);cArc(g,O,r0,aA+0.2,aA-thr-0.4);cPt(g,D1,'D′',[10,14]);}},
+      {tool:'compass',t:'Open the compass to the distance from D to E. Put the point on D′ and draw an arc that crosses the long arc. Label the crossing E′.',
+       why:'Equal radii and equal chords (DE = D′E′) make equal angles, so ∠D′OE′ = ∠V.',
+       d(g,now){measure(g,Dg,Eg,now);arcThrough(g,D1,E1,0.6);cPt(g,E1,'E′',labOff(E1,O,16));}},
+      {tool:'straightedge',t:'Use the straightedge to draw a ray from O through E′.',
+       why:'The angle between ray OA and this new ray is exactly the angle of rotation.',
+       d(g){cSeg(g,O,ext(O,E1,OA-r0+35));}},
+      {tool:'compass',t:'Open the compass to the distance from O to A. Put the point on O and draw an arc that crosses ray OE′. Label the crossing A′.',
+       why:'A rotation keeps every point the same distance from the center, so OA′ must equal OA.',
+       d(g,now){measure(g,O,A,now);cArc(g,O,OA,aA,aA-thr+0.12,'c-dash');arcThrough(g,O,Ap,0.2);cPt(g,Ap,'A′',labOff(Ap,O,18));}},
+      {tool:'both',t:'Repeat steps 1, 3, 4, 5 and 6 for B and C (D and E are already marked). Then join A′, B′ and C′.',
+       why:'△A′B′C′ is the rotation of △ABC. The vertex order is unchanged, because rotations keep orientation.',
+       d(g){T.slice(1).forEach(p=>{const a=angS(O,p);cArc(g,O,D2(O,p),a,a-thr,'c-dash');});cTri(g,img,'ro',['','B′','C′']);}}
+    ]};}
+
+const CONS={reflect:conReflect,translate:conTranslate,rotate:conRotate};
+const TOOLNAME={compass:'compass',straightedge:'straightedge',both:'compass and straightedge'};
+const co={type:'reflect',cur:-1,data:conReflect()};
+function drawCon(svg,D,upto){svg.setAttribute('viewBox','0 0 640 440');svg.innerHTML='';const base=el('g',null,svg);D.drawGiven(base);
+  for(let i=0;i<=upto;i++){const g=el('g',{class:i===upto&&svg.id==='coSvg'?'now':''},svg);D.steps[i].d(g,i===upto&&svg.id==='coSvg');}}
+function coRender(){const D=co.data;drawCon($('#coSvg'),D,co.cur);
+  $('#coGiven').textContent=D.given;
+  const ol=$('#coSteps');ol.innerHTML='';
+  D.steps.forEach((s,i)=>{const li=document.createElement('li');li.className=i<co.cur?'done':i===co.cur?'cur':'todo';
+    li.innerHTML=`<span>${s.t}<span class="tool">${TOOLNAME[s.tool]}</span></span>`;li.onclick=()=>{co.cur=i;coRender();};ol.appendChild(li);});
+  $('#coWhy').innerHTML=co.cur<0?'Press <b>Next step</b> to start the construction. Each step tells you which tool to use.':`<b>Why it works:</b> ${D.steps[co.cur].why}`;
+  $('#coPrev').disabled=co.cur<0;$('#coNext').disabled=co.cur>=D.steps.length-1;}
+$('#coType').querySelectorAll('button').forEach(b=>b.onclick=()=>{co.type=b.dataset.t;co.data=CONS[co.type]();co.cur=-1;$('#coType').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));coRender();});
+$('#coPrev').onclick=()=>{if(co.cur>-1){co.cur--;coRender();}};
+$('#coNext').onclick=()=>{if(co.cur<co.data.steps.length-1){co.cur++;coRender();}};
+$('#coAll').onclick=()=>{co.cur=co.data.steps.length-1;coRender();};
+coRender();
+
+/* ---------- practice without a grid ---------- */
+const NW=600,NH=420;const ng={mode:'place',c:0,t:0,q:null,lastQ:-1};
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const inCanvas=(pts,m)=>pts.every(p=>p[0]>m&&p[0]<NW-m&&p[1]>m&&p[1]<NH-m);
+function randTriS(cx,cy,size){for(let k=0;k<300;k++){const P=[0,1,2].map(i=>{const a=i*2.1+rnd(-.45,.45),r=size*rnd(.65,1.15);return[cx+r*Math.cos(a),cy+r*Math.sin(a)];});
+  const d=[D2(P[0],P[1]),D2(P[1],P[2]),D2(P[2],P[0])];if(Math.min(...d)<50)continue;if(Math.abs(d[0]-d[1])<12||Math.abs(d[1]-d[2])<12||Math.abs(d[0]-d[2])<12)continue;return P;}
+  return[[cx-40,cy+30],[cx+45,cy+25],[cx-15,cy-45]];}
+function genT(kind,degs){
+  for(let k=0;k<600;k++){
+    if(kind==='reflect'){const c=[rnd(220,380),rnd(170,250)],a=rnd(0.15,Math.PI-0.15),u=[Math.cos(a),Math.sin(a)],n=[-u[1],u[0]];
+      const m1=V2.sub(c,V2.mul(u,700)),m2=V2.add(c,V2.mul(u,700)),side=Math.random()<.5?1:-1;
+      const tc=V2.add(V2.add(c,V2.mul(n,side*rnd(85,130))),V2.mul(u,rnd(-50,50)));const T=randTriS(tc[0],tc[1],rnd(40,56));
+      const sd=p=>V2.dot(V2.sub(p,c),n);if(!T.every(p=>Math.sign(sd(p))===side&&Math.abs(sd(p))>18))continue;
+      const img=T.map(p=>reflS(p,m1,m2));if(!inCanvas(T,28)||!inCanvas(img,28))continue;
+      let lab=null;for(let t=600;t>-600;t-=5){const p=V2.add(c,V2.mul(u,t));if(inCanvas([p],22)){lab=p;break;}}
+      return{kind,T,img,m1,m2,lab,desc:'Reflect △ABC over line m.'};}
+    if(kind==='translate'){const len=rnd(140,215),a=rnd(0,2*Math.PI),v=[len*Math.cos(a),len*Math.sin(a)];const T=randTriS(rnd(110,490),rnd(100,320),rnd(40,55));const img=T.map(p=>V2.add(p,v));
+      if(!inCanvas(T,28)||!inCanvas(img,28))continue;let S=null;
+      for(let j=0;j<80;j++){const s0=[rnd(30,NW-30),rnd(30,NH-30)],e0=V2.add(s0,v);if(!inCanvas([s0,e0],22))continue;
+        const ok=[...T,...img].every(p=>[0,.25,.5,.75,1].every(f=>D2(p,V2.add(s0,V2.mul(v,f)))>48));if(ok){S=s0;break;}}
+      if(!S)continue;return{kind,T,img,S,E:V2.add(S,v),v,desc:'Translate △ABC along the arrow from S to T.'};}
+    if(kind==='rotate'){const deg=pick(degs||[90,-90,180]);const O=[rnd(240,360),rnd(170,250)];const tc=polar(O,rnd(115,150),rnd(0,2*Math.PI));
+      const T=randTriS(tc[0],tc[1],rnd(38,50));if(T.some(p=>D2(p,O)<55))continue;const img=T.map(p=>rotS(p,O,deg));
+      if(!inCanvas(T,28)||!inCanvas(img,28))continue;return{kind,T,img,O,deg,desc:`Rotate △ABC ${angleName(deg)} about point O.`};}
+  }}
+function drawGivenNG(g,q){
+  if(q.kind==='reflect'){cSeg(g,q.m1,q.m2,'m-line');if(q.lab)el('text',{x:q.lab[0]+12,y:q.lab[1]+4,class:'c-lab'},g).textContent='m';}
+  if(q.kind==='translate'){cSeg(g,q.S,q.E,'v-line');arrowAt(g,q.E,q.v,'tr');cPt(g,q.S,'S',[-12,12]);cPt(g,q.E,'T',[14,12]);}
+  if(q.kind==='rotate'){cPt(g,q.O,'O',[-14,12]);const a0=q.T?angS(q.O,q.T[0]):0;turnArrow(g,q.O,30,a0,q.deg>0?q.deg-8:q.deg+8);
+    el('text',{x:q.O[0]+14,y:q.O[1]+40,class:'c-small'},g).textContent=angleName(q.deg);}
+}
+function drawPaths(g,q){q.T.forEach((p,i)=>{const pi=q.img[i];
+  if(q.kind==='rotate'){const a=angS(q.O,p);cArc(g,q.O,D2(q.O,p),a,a-q.deg*Math.PI/180,'c-dash');}
+  else cSeg(g,p,pi,'c-dash');});}
+function ngRender(){const svg=$('#ngSvg'),q=ng.q;svg.innerHTML='';
+  if(q.mode==='steps'){const D=CONS[q.ctype]();
+    if(q.pair){svg.setAttribute('viewBox','0 0 640 440');const g=el('g',null,svg);cTri(g,D.T,'pre',ABC);cTri(g,D.img,'target',ABCp);}
+    else drawCon(svg,D,q.show-1);return;}
+  svg.setAttribute('viewBox',`0 0 ${NW} ${NH}`);const g=el('g',null,svg);
+  if(q.mode==='place'){drawGivenNG(g,q);if(q.checked){drawPaths(g,q);cTri(g,q.img,CLS[q.kind],ABCp);}
+    cTri(g,q.T,'pre',ABC);
+    if(q.guess.length===3)el('polygon',{points:q.guess.map(p=>p.join(',')).join(' '),class:'guess'},g);
+    q.guess.forEach((p,i)=>{el('circle',{cx:p[0],cy:p[1],r:8,class:'guess-pt','data-k':i},g);el('text',{x:p[0]+14,y:p[1]-10,class:'c-lab'},g).textContent=ABCp[i];});}
+  if(q.mode==='name'){if(q.answered){drawGivenNG(g,q);drawPaths(g,q);}cTri(g,q.T,'pre',ABC);cTri(g,q.img,'target',ABCp);}
+}
+function ngScore(ok){ng.t++;if(ok)ng.c++;$('#ngC').textContent=ng.c;$('#ngT').textContent=ng.t;}
+const NGWHY={reflect:'Each image point is directly across line m, the same distance away on the other side (the segment from a point to its image is perpendicular to m).',
+  translate:'Every point moves exactly like the arrow: the same length, in the same direction.',
+  rotate:'Each point stays the same distance from O and turns through the given angle, in the given direction.'};
+function ngNew(){
+  const card=$('#ngCard');
+  if(ng.mode==='place'){const q=genT(pick(['reflect','translate','rotate']));q.mode='place';q.guess=[];q.checked=false;ng.q=q;
+    $('#ngHint').textContent='Tap the page to place A′, then B′, then C′. Drag a point to adjust it.';
+    card.innerHTML=`<span class="tag">Place the image</span><p class="qtext">${q.desc}</p><p class="note" id="ngNext"></p>
+      <div class="row"><button class="btn" id="ngCheck" disabled>Check my image</button><button class="btn ghost" id="ngClear">Clear points</button></div>
+      <div class="fb" id="ngFb" role="status"></div><div class="row"><button class="btn ghost" id="ngNew">New question</button></div>`;
+    $('#ngClear').onclick=()=>{if(q.checked)return;q.guess=[];ngRender();ngCardState();};
+    $('#ngCheck').onclick=()=>ngCheckPlace();$('#ngNew').onclick=ngNew;ngCardState();}
+  else if(ng.mode==='name'){const kind=pick(['reflect','translate','rotate']);const q=genT(kind,[60,75,90,120,135,150,-60,-75,-90,-120,-135,-150,180]);q.mode='name';q.answered=false;ng.q=q;
+    $('#ngHint').textContent='No grid, no coordinates. Look at the shapes themselves.';
+    card.innerHTML=`<span class="tag">Name the transformation</span><p class="qtext">Which single transformation maps △ABC onto △A′B′C′?</p>
+      <p class="note">Clues without a grid: is the image flipped (do the letters A, B, C run the other way around)? Are matching sides parallel?</p>
+      <div class="opts">${['translate','reflect','rotate'].map(k=>`<button class="opt" data-k="${k}">${{translate:'Translation',reflect:'Reflection',rotate:'Rotation'}[k]}</button>`).join('')}</div>
+      <div class="fb" id="ngFb" role="status"></div><div class="row"><button class="btn ghost" id="ngNew">Next question</button></div>`;
+    card.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(q.answered)return;q.answered=true;const ok=b.dataset.k===q.kind;
+      card.querySelectorAll('.opt').forEach(x=>{x.disabled=true;if(x.dataset.k===q.kind)x.classList.add('right');});if(!ok)b.classList.add('wrong');
+      const ex={reflect:'The image is flipped: A→B→C runs one way around, but A′→B′→C′ runs the other way. Only a reflection reverses orientation. The line of reflection (now shown) is the perpendicular bisector of AA′.',
+        translate:'Each side of the image is parallel to its matching side and points the same way, and every vertex moved the same distance in the same direction. That is a translation (the arrows are now shown).',
+        rotate:`The image is turned, not flipped: A→B→C and A′→B′→C′ run the same way around. ${Math.abs(q.deg)===180?'Matching sides are parallel, but each one points the opposite way, which a translation can’t do. ':'Matching sides are no longer parallel. '}That is a rotation, here ${angleName(q.deg)} about O. O is where the perpendicular bisectors of AA′ and BB′ meet.`}[q.kind];
+      ngScore(ok);const fb=$('#ngFb');fb.className='fb show '+(ok?'good':'bad');fb.innerHTML=`<b>${ok?'Correct!':'Not quite.'}</b><p>${ex}</p>`;ngRender();$('#ngNew').classList.remove('ghost');});
+    $('#ngNew').onclick=ngNew;}
+  else{let i;do{i=rand(0,CQ.length-1);}while(i===ng.lastQ);ng.lastQ=i;const C=CQ[i];const q={mode:'steps',ctype:C.type,show:C.show,pair:C.pair};ng.q=q;
+    $('#ngHint').textContent=C.pair?'The pre-image and its image. The construction lines have been erased.':(C.show?`The construction after step ${C.show}.`:'The starting figure.');
+    const order=shuffle(C.o.map((_,j)=>j));
+    card.innerHTML=`<span class="tag">Construction question</span><p class="qtext">${C.q}</p><div class="opts">${order.map(j=>`<button class="opt" data-i="${j}">${C.o[j]}</button>`).join('')}</div>
+      <div class="fb" id="ngFb" role="status"></div><div class="row"><button class="btn ghost" id="ngNew">Next question</button></div>`;
+    let done=false;card.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(done)return;done=true;const ok=+b.dataset.i===C.a;
+      card.querySelectorAll('.opt').forEach(x=>{x.disabled=true;if(+x.dataset.i===C.a)x.classList.add('right');});if(!ok)b.classList.add('wrong');
+      ngScore(ok);const fb=$('#ngFb');fb.className='fb show '+(ok?'good':'bad');fb.innerHTML=`<b>${ok?'Correct!':'Not quite.'}</b><p>${C.e}</p>`;$('#ngNew').classList.remove('ghost');});
+    $('#ngNew').onclick=ngNew;}
+  ngRender();}
+function ngCardState(){const q=ng.q;if(q.mode!=='place')return;const n=q.guess.length;
+  $('#ngNext').textContent=q.checked?'':n<3?`Next to place: ${ABCp[n]}`:'All three placed. Adjust them if you like, then check.';$('#ngCheck').disabled=n<3||q.checked;}
+function ngCheckPlace(){const q=ng.q;if(q.checked||q.guess.length<3)return;q.checked=true;const tol=24;
+  const err=q.guess.map((p,i)=>D2(p,q.img[i]));const ok=err.every(e=>e<=tol);
+  const swapped=!ok&&q.guess.every(p=>q.img.some(t=>D2(p,t)<=tol));
+  let list='<ul class="reslist">'+err.map((e,i)=>`<li>${ABCp[i]}: ${e<=tol?'right on':e<=55?'close, but not quite':'too far from the right spot'}</li>`).join('')+'</ul>';
+  let msg=ok?'Your image matches. ':swapped?'Your points are in the right places, but the labels are mixed up. Each image point should take the letter of its original: A goes to A′. ':'Compare your dashed triangle with the colored one. ';
+  ngScore(ok);const fb=$('#ngFb');fb.className='fb show '+(ok?'good':'bad');fb.innerHTML=`<b>${ok?'Correct!':'Not quite.'}</b><p>${msg}${NGWHY[q.kind]}</p>${list}<p class="note">The colored triangle is the exact image. Dashed paths show how each vertex moves.</p>`;
+  ngRender();ngCardState();$('#ngNew').classList.remove('ghost');}
+(function(){const svg=$('#ngSvg');let drag=null;
+  function loc(e){const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());return[Math.max(6,Math.min(NW-6,p.x)),Math.max(6,Math.min(NH-6,p.y))];}
+  svg.addEventListener('pointerdown',e=>{const q=ng.q;if(!q||q.mode!=='place'||q.checked)return;const k=e.target.getAttribute&&e.target.getAttribute('data-k');
+    if(k!==null&&k!==undefined&&k!==''){drag=+k;}else if(q.guess.length<3){q.guess.push(loc(e));drag=q.guess.length-1;ngRender();ngCardState();}else return;
+    svg.setPointerCapture(e.pointerId);e.preventDefault();});
+  svg.addEventListener('pointermove',e=>{if(drag===null)return;ng.q.guess[drag]=loc(e);ngRender();});
+  const end=()=>{drag=null;};svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);})();
+const CQ=[
+  {type:'reflect',show:0,q:'To reflect point A over line m with a compass and straightedge, what do you do first?',o:['Put the compass point on A and draw an arc that crosses m twice','Measure the distance from A to m with a ruler','Draw a line through A parallel to m','Put the compass point on m and draw a circle through A'],a:0,e:'Two points on m that are the same distance from A are what you need to build the perpendicular bisector through A′.'},
+  {type:'reflect',show:2,q:'Steps 1 and 2 are done. Why must the compass keep the same width for the arc from Y?',o:['So A′ is the same distance from X and Y as A is, making m the perpendicular bisector of AA′','So the arc is easier to draw','So that A′ lands on line m','It doesn’t matter; any width works'],a:0,e:'Equal distances from X and from Y put A′ exactly across m from A, at the same distance.'},
+  {type:'reflect',show:0,pair:true,q:'△A′B′C′ is the reflection of △ABC, but line m was erased. How can you construct m?',o:['Construct the perpendicular bisector of AA′','Draw the line through A and A′','Draw the line through A and B′','Bisect angle A'],a:0,e:'The line of reflection is the perpendicular bisector of the segment joining any point to its image.'},
+  {type:'translate',show:1,q:'The compass is set to the length ST. You put the point on A and draw an arc. What does that arc show?',o:['All the points that are exactly as far from A as S is from T','The path A travels during the translation','The line of reflection','All the points the same distance from S'],a:0,e:'A′ must be that distance from A, so it is somewhere on this arc. The second arc pins down exactly where.'},
+  {type:'translate',show:4,q:'In the translation construction, what shape do S, T, A′ and A form?',o:['A parallelogram','A kite','A trapezoid with only one pair of parallel sides','A right triangle and a point'],a:0,e:'Both pairs of opposite sides are equal (ST = AA′ and SA = TA′), so it is a parallelogram. That guarantees AA′ is parallel to ST.'},
+  {type:'translate',show:0,pair:true,q:'△A′B′C′ is a translation of △ABC, but the arrow is missing. What describes the translation?',o:['The segment from A to A′ (or B to B′, or C to C′)','Segment AB','Segment A′C','The line through the middle of △ABC'],a:0,e:'In a translation every point moves the same distance in the same direction, so any segment from a point to its image is the translation arrow.'},
+  {type:'rotate',show:0,q:'Without a protractor, how do you make an angle at O equal to the given angle V?',o:['Copy it with compass and straightedge: copy the arc’s radius, then copy the chord DE','Estimate it by eye','Draw a perpendicular line at O','Fold the paper in half'],a:0,e:'Two angles with equal radii and equal chords are equal. That is how a compass copies an angle.'},
+  {type:'rotate',show:3,q:'Steps 1 to 3 are done. What comes next when rotating A about O?',o:['Open the compass to DE, put the point on D′, and draw an arc crossing the long arc','Open the compass to OA and draw a full circle','Draw a line through A parallel to VD','Measure the angle with a protractor'],a:0,e:'Copying chord DE onto the arc at O gives E′, which completes the copied angle.'},
+  {type:'rotate',show:5,q:'The angle has been copied at O. Why is the compass set to OA before marking A′?',o:['A rotation keeps every point the same distance from the center','A′ must be on line m','OA equals the length of the translation arrow','So A′ lands on angle V'],a:0,e:'Points move along circles centered at O during a rotation, so OA′ = OA.'},
+  {type:'rotate',show:0,pair:true,q:'△A′B′C′ is a rotation of △ABC, but the center is missing. How can you find it?',o:['Construct the perpendicular bisectors of AA′ and BB′; the center is where they cross','Find the midpoint of AA′','Find where lines AB and A′B′ cross','Find the midpoint of AB'],a:0,e:'The center is the same distance from A and A′, so it is on the perpendicular bisector of AA′. It is also on the one for BB′, so it is where they meet.'},
+  {type:'reflect',show:0,q:'Which tools are used in a classical construction?',o:['A compass and a straightedge with no measurement marks','A protractor and a ruler','A compass, a ruler and a protractor','Only a ruler'],a:0,e:'A compass copies lengths and a straightedge draws lines. Measuring is not allowed, which is why we copy distances and angles instead.'}
+];
+$('#ngMode').querySelectorAll('button').forEach(b=>b.onclick=()=>{ng.mode=b.dataset.m;$('#ngMode').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));ngNew();});
+ngNew();
+
+})();
+</script>
+</body>
+</html>
